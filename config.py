@@ -1,0 +1,44 @@
+import os
+
+from dotenv import load_dotenv
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
+
+
+class Config:
+    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+    HOST = os.getenv('HOST', '0.0.0.0')
+    PORT = int(os.getenv('PORT', 5000))
+    FLASK_DEBUG = FLASK_ENV == 'development'
+
+    # MySQL
+    MYSQL_HOST = os.getenv('MYSQL_HOST')
+    MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
+    MYSQL_USER = os.getenv('MYSQL_USER')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
+    MYSQL_DATABASE = os.getenv('MYSQL_DATABASE')
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Redis
+    REDIS_HOST = os.getenv('REDIS_HOST')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    REDIS_DB = int(os.getenv('REDIS_DB', 0))
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD') or None
+
+    # SMTP
+    SMTP_SERVER = os.getenv('SMTP_SERVER')
+    SMTP_PORT = int(os.getenv('SMTP_PORT', 465))
+    SMTP_USE_SSL = os.getenv('SMTP_USE_SSL', 'true').lower() == 'true'
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+    SMTP_SENDER = os.getenv('SMTP_SENDER')
+
+    # JWT
+    JWT_SECRET = os.getenv('JWT_SECRET')
+    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
+    JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', 168))
