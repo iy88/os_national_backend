@@ -97,6 +97,7 @@ def fetch_avatar():
     if not token:
         return jsonify({'success': False, 'message': 'token is required'}), 400
 
+    # noinspection PyBroadException
     try:
         payload = decode_avatar_token(token)
         fid = payload.get('fid')

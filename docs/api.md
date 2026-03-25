@@ -128,7 +128,8 @@
   "userInfo": {
     "uid": 1,
     "username": "user",
-    "email": "user@example.com"
+    "email": "user@example.com",
+    "avatarToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```

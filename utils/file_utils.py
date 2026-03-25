@@ -41,6 +41,7 @@ def save_avatar_file(file) -> str:
     return secure_filename_str
 
 
+# noinspection PyShadowingNames
 def get_avatar_file_path(secure_filename: str) -> str:
     """获取头像文件的完整路径"""
     return os.path.join(Config.UPLOAD_FOLDER, secure_filename)

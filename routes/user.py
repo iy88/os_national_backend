@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from functools import wraps
 
-from config import Config
 from models import db
 from models.user import User, UserInfo
 from utils.jwt_utils import generate_token, decode_token
@@ -19,6 +18,7 @@ def token_required(f):
         token = request.headers.get('Authorization')
         if not token:
             return jsonify({'success': False, 'message': 'Token is missing'}), 401
+        # noinspection PyBroadException
         try:
             if token.startswith('Bearer '):
                 token = token[7:]
@@ -51,13 +51,18 @@ def login():
 
     token = generate_token(user.uid)
 
+    avatar_token = None
+    if user.user_info and user.user_info.avatar_id:
+        avatar_token = generate_avatar_token(user.uid, user.user_info.avatar_id)
+
     return jsonify({
         'success': True,
         'token': token,
         'userInfo': {
             'uid': user.uid,
             'username': user.username,
-            'email': user.email
+            'email': user.email,
+            'avatarToken': avatar_token
         }
     })
 
