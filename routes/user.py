@@ -100,19 +100,17 @@ def register():
 
     password_hash = hash_password(password)
 
-    from flask import current_app
-    with current_app.app_context():
-        new_user = User(username=username, email=email, password_hash=password_hash)
-        db.session.add(new_user)
-        db.session.flush()
+    new_user = User(username=username, email=email, password_hash=password_hash)
+    db.session.add(new_user)
+    db.session.flush()
 
-        new_user_info = UserInfo(uid=new_user.uid)
-        db.session.add(new_user_info)
-        db.session.commit()
+    new_user_info = UserInfo(uid=new_user.uid)
+    db.session.add(new_user_info)
+    db.session.commit()
 
-        user_uid = new_user.uid
-        user_username = new_user.username
-        user_email = new_user.email
+    user_uid = new_user.uid
+    user_username = new_user.username
+    user_email = new_user.email
 
     delete_verification_code(email)
     token = generate_token(user_uid)
@@ -178,18 +176,17 @@ def update_profile(current_user_id):
             return jsonify({'success': False, 'message': 'Username already exists'}), 409
         user.username = username
 
-    from flask import current_app
-    with current_app.app_context():
-        if user.user_info:
-            if gender is not None:
-                user.user_info.gender = gender
-            if age is not None:
-                user.user_info.age = age
-            if basic_info is not None:
-                user.user_info.basic_info = basic_info
-            if bio is not None:
-                user.user_info.bio = bio
-        db.session.commit()
+    # 更新用户信息（直接在请求上下文中操作，无需额外 app_context）
+    if user.user_info:
+        if gender is not None:
+            user.user_info.gender = gender
+        if age is not None:
+            user.user_info.age = age
+        if basic_info is not None:
+            user.user_info.basic_info = basic_info
+        if bio is not None:
+            user.user_info.bio = bio
+    db.session.commit()
 
     return jsonify({
         'success': True,
