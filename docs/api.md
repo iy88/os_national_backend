@@ -3,6 +3,7 @@
 ## 目录
 
 - [用户认证](#用户认证)
+- [用户信息](#用户信息)
 
 ## 用户认证
 
@@ -137,6 +138,115 @@
 {
   "success": false,
   "message": "Invalid credentials"
+}
+```
+
+---
+
+## 用户信息
+
+### 4. 获取用户信息
+
+- **URL**: `GET /user/profile`
+- **描述**: 获取当前登录用户的详细信息
+- **认证**: 需要 Bearer Token
+
+**请求**:
+```
+GET /user/profile
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "userInfo": {
+    "uid": 1,
+    "username": "user",
+    "email": "user@example.com",
+    "gender": "男",
+    "age": 25,
+    "basicInfo": "基本信息",
+    "bio": "简介"
+  }
+}
+```
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Token is missing"
+}
+```
+
+---
+
+### 5. 更新用户信息
+
+- **URL**: `PUT /user/profile`
+- **描述**: 批量（增量）更新当前用户信息，所有字段均为可选
+- **认证**: 需要 Bearer Token
+
+**请求**:
+```
+PUT /user/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "username": "new_username",
+  "gender": "女",
+  "age": 30,
+  "basicInfo": "新基本信息",
+  "bio": "新简介"
+}
+```
+
+| 字段       | 类型    | 必填 | 说明                        |
+|----------|--------|----|---------------------------|
+| username | string | 否  | 用户名（3-80 字符），需唯一         |
+| gender   | string | 否  | 性别                          |
+| age      | int    | 否  | 年龄                          |
+| basicInfo | string | 否  | 基本信息                       |
+| bio      | string | 否  | 简介                          |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "message": "Profile updated",
+  "userInfo": {
+    "uid": 1,
+    "username": "new_username",
+    "email": "user@example.com",
+    "gender": "女",
+    "age": 30,
+    "basicInfo": "新基本信息",
+    "bio": "新简介"
+  }
+}
+```
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+**响应 (失败 - 409)**:
+
+```json
+{
+  "success": false,
+  "message": "Username already exists"
 }
 ```
 

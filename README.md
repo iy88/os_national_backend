@@ -60,4 +60,6 @@ API 文档见 [docs/api.md](docs/api.md)
 | POST | /email/verification/send | 发送邮箱验证码 |
 | POST | /user/register           | 用户注册    |
 | POST | /user/login              | 用户登录    |
+| GET  | /user/profile            | 获取用户信息  |
+| PUT  | /user/profile            | 更新用户信息  |
 | GET  | /health                  | 健康检查    |
