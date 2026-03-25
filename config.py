@@ -42,3 +42,8 @@ class Config:
     JWT_SECRET = os.getenv('JWT_SECRET')
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
     JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', 168))
+
+    # File Upload
+    UPLOAD_FOLDER = os.path.join(basedir, os.getenv('UPLOAD_FOLDER', 'uploads/files'))
+    MAX_AVATAR_SIZE = int(os.getenv('MAX_AVATAR_SIZE', 2 * 1024 * 1024))  # 2MB
+    ALLOWED_AVATAR_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}

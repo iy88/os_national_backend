@@ -4,6 +4,7 @@
 
 - [用户认证](#用户认证)
 - [用户信息](#用户信息)
+- [文件接口](#文件接口)
 
 ## 用户认证
 
@@ -169,10 +170,15 @@ Authorization: Bearer <token>
     "gender": "男",
     "age": 25,
     "basicInfo": "基本信息",
-    "bio": "简介"
+    "bio": "简介",
+    "avatarToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
+
+| 字段        | 类型   | 说明             |
+|-------------|--------|----------------|
+| avatarToken | string | 头像 JWT token（有头像时返回） |
 
 **响应 (失败 - 401)**:
 
@@ -247,6 +253,89 @@ Content-Type: application/json
 {
   "success": false,
   "message": "Username already exists"
+}
+```
+
+---
+
+## 文件接口
+
+### 6. 上传头像
+
+- **URL**: `POST /file/avatar/upload`
+- **描述**: 上传用户头像，如已有头像则替换旧头像（删除旧文件及记录）
+- **Content-Type**: `multipart/form-data`
+
+**请求**:
+
+| 字段    | 类型   | 必填 | 说明     |
+|---------|--------|----|----------|
+| user_id | string | 是  | 用户 ID  |
+| file    | file  | 是  | 头像文件 |
+
+**限制**:
+- 文件大小：最大 2MB
+- 支持格式：png, jpg, jpeg, gif, webp
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "message": "Avatar uploaded",
+  "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**响应 (失败 - 400)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid file type"
+}
+```
+
+**响应 (失败 - 413)**:
+
+```json
+{
+  "success": false,
+  "message": "File too large"
+}
+```
+
+---
+
+### 7. 获取头像
+
+- **URL**: `GET /file/avatar/fetch?token=<avatar_token>`
+- **描述**: 根据 avatar token 获取头像图片
+- **返回**: 图片二进制数据，MIME 类型
+
+**请求**:
+
+```
+GET /file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**响应**: 图片二进制数据
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid or expired token"
+}
+```
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Avatar not found"
 }
 ```
 

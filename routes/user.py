@@ -8,6 +8,7 @@ from utils.jwt_utils import generate_token, decode_token
 from utils.password_utils import hash_password, verify_password
 from utils.redis_client import get_verification_code, delete_verification_code
 from utils.email_utils import is_valid_email
+from utils.file_utils import generate_avatar_token
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -135,6 +136,10 @@ def get_profile(current_user_id):
     if not user:
         return jsonify({'success': False, 'message': 'User not found'}), 404
 
+    avatar_token = None
+    if user.user_info and user.user_info.avatar_id:
+        avatar_token = generate_avatar_token(user.uid, user.user_info.avatar_id)
+
     return jsonify({
         'success': True,
         'userInfo': {
@@ -144,7 +149,8 @@ def get_profile(current_user_id):
             'gender': user.user_info.gender if user.user_info else None,
             'age': user.user_info.age if user.user_info else None,
             'basicInfo': user.user_info.basic_info if user.user_info else None,
-            'bio': user.user_info.bio if user.user_info else None
+            'bio': user.user_info.bio if user.user_info else None,
+            'avatarToken': avatar_token
         }
     })
 

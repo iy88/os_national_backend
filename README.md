@@ -62,4 +62,6 @@ API 文档见 [docs/api.md](docs/api.md)
 | POST | /user/login              | 用户登录    |
 | GET  | /user/profile            | 获取用户信息  |
 | PUT  | /user/profile            | 更新用户信息  |
+| POST | /file/avatar/upload      | 上传头像    |
+| GET  | /file/avatar/fetch       | 获取头像    |
 | GET  | /health                  | 健康检查    |
