@@ -82,6 +82,12 @@ def register():
     if not is_valid_email(email):
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
 
+    if username and (len(username) < 3 or len(username) > 80):
+        return jsonify({'success': False, 'message': 'Username must be 3-80 characters'}), 400
+
+    if len(password) < 6 or len(password) > 128:
+        return jsonify({'success': False, 'message': 'Password must be 6-128 characters'}), 400
+
     stored_code = get_verification_code(email)
     if not stored_code or stored_code != verify_code:
         return jsonify({'success': False, 'message': 'Invalid or expired verification code'}), 400
