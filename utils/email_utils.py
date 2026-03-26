@@ -3,7 +3,7 @@ import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+from flask import current_app
 from utils.redis_client import set_verification_code
 
 
@@ -17,8 +17,6 @@ def generate_verification_code() -> str:
 
 
 def send_verification_email(email: str, code: str):
-    from flask import current_app
-
     set_verification_code(email, code)
 
     msg = MIMEMultipart('alternative')
