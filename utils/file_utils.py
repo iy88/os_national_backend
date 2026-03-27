@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from werkzeug.utils import secure_filename
@@ -52,8 +52,8 @@ def generate_avatar_token(user_id: int, fid: int) -> str:
     payload = {
         'user_id': user_id,
         'fid': fid,
-        'exp': datetime.utcnow() + timedelta(hours=Config.JWT_EXPIRATION_HOURS),
-        'iat': datetime.utcnow()
+        'exp': datetime.now(timezone.utc) + timedelta(hours=Config.JWT_EXPIRATION_HOURS),
+        'iat': datetime.now(timezone.utc)
     }
     return jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
 

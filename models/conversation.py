@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from models import db
 
@@ -10,8 +10,8 @@ class ConversationSession(db.Model):
     sid = db.Column(db.Integer, primary_key=True, autoincrement=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     messages = db.relationship('Message', backref='session', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -28,7 +28,7 @@ class Message(db.Model):
     sid = db.Column(db.Integer, db.ForeignKey('conversation_sessions.sid', ondelete='CASCADE'), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # user / assistant
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         db.Index('idx_messages_sid', 'sid'),

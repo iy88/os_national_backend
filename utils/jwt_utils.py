@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import jwt
@@ -9,8 +9,8 @@ from flask import request, jsonify
 def generate_token(user_id: int) -> str:
     payload = {
         'user_id': user_id,
-        'exp': datetime.utcnow() + timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
-        'iat': datetime.utcnow()
+        'exp': datetime.now(timezone.utc) + timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
+        'iat': datetime.now(timezone.utc)
     }
     return jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm=os.getenv('JWT_ALGORITHM', 'HS256'))
 
