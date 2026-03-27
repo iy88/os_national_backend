@@ -1,33 +1,14 @@
 from flask import Blueprint, request, jsonify
-from functools import wraps
 
 from models import db
 from models.user import User, UserInfo
-from utils.jwt_utils import generate_token, decode_token
-from utils.password_utils import hash_password, verify_password
-from utils.redis_client import get_verification_code, delete_verification_code
 from utils.email_utils import is_valid_email
 from utils.file_utils import generate_avatar_token
+from utils.jwt_utils import generate_token, token_required
+from utils.password_utils import hash_password, verify_password
+from utils.redis_client import get_verification_code, delete_verification_code
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
-
-
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization')
-        if not token:
-            return jsonify({'success': False, 'message': 'Token is missing'}), 401
-        # noinspection PyBroadException
-        try:
-            if token.startswith('Bearer '):
-                token = token[7:]
-            payload = decode_token(token)
-            current_user_id = payload['user_id']
-        except Exception:
-            return jsonify({'success': False, 'message': 'Invalid token'}), 401
-        return f(current_user_id, *args, **kwargs)
-    return decorated
 
 
 @user_bp.route('/login', methods=['POST'])

@@ -3,7 +3,9 @@ import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 from flask import current_app
+
 from utils.redis_client import set_verification_code
 
 

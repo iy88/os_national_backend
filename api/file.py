@@ -1,4 +1,5 @@
 import os
+
 from flask import Blueprint, request, jsonify, send_file
 
 from config import Config

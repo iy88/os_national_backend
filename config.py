@@ -47,3 +47,8 @@ class Config:
     UPLOAD_FOLDER = os.path.join(basedir, os.getenv('UPLOAD_FOLDER', 'uploads/files'))
     MAX_AVATAR_SIZE = int(os.getenv('MAX_AVATAR_SIZE', 2 * 1024 * 1024))  # 2MB
     ALLOWED_AVATAR_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+    # AI Provider
+    AI_PROVIDER = os.getenv('AI_PROVIDER', 'dashscope')
+    AI_API_KEY = os.getenv('AI_API_KEY')
+    AI_APP_ID = os.getenv('AI_APP_ID')

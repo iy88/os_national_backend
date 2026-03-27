@@ -1,7 +1,8 @@
 import os
 import uuid
-import jwt
 from datetime import datetime, timedelta
+
+import jwt
 from werkzeug.utils import secure_filename
 
 from config import Config
@@ -10,7 +11,7 @@ from config import Config
 def allowed_avatar_file(filename: str) -> bool:
     """检查文件扩展名是否允许"""
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_AVATAR_EXTENSIONS
+        filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_AVATAR_EXTENSIONS
 
 
 def get_file_mime(filename: str) -> str:

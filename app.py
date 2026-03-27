@@ -1,8 +1,8 @@
 from flask import Flask, jsonify
 
+from api import user_bp, email_bp, file_bp, agent_bp, route_bp
 from config import Config
 from models import db
-from routes import user_bp, email_bp, file_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -12,6 +12,8 @@ db.init_app(app)
 app.register_blueprint(user_bp)
 app.register_blueprint(email_bp)
 app.register_blueprint(file_bp)
+app.register_blueprint(agent_bp)
+app.register_blueprint(route_bp)
 
 
 @app.route('/health', methods=['GET'])
