@@ -1,6 +1,6 @@
 import json
 import threading
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify, Response, stream_with_context, current_app
 
@@ -63,7 +63,7 @@ def _remove_empty_assistant_message(sid: int, mid: int):
         db.session.delete(msg)
         session_row = ConversationSession.query.filter_by(sid=sid).first()
         if session_row:
-            session_row.updated_at = datetime.now(timezone(timedelta(hours=8)))
+            session_row.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.session.commit()
         print(f"Removed empty assistant message sid={sid}, mid={mid}")
     except Exception as cleanup_err:
@@ -80,7 +80,7 @@ def _persist_assistant_message(sid: int, mid: int, current_user_id: int, full_co
     session_row = ConversationSession.query.filter_by(sid=sid, uid=current_user_id).first()
     if not session_row:
         raise RuntimeError('Session not found while persisting stream result')
-    session_row.updated_at = datetime.now(timezone(timedelta(hours=8)))
+    session_row.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     db.session.commit()
 
@@ -326,7 +326,7 @@ def send_message(current_user_id):
         # 创建新会话
         session = ConversationSession(
             uid=current_user_id,
-            title=datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
+            title=datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y-%m-%d %H:%M')
         )
         db.session.add(session)
         db.session.flush()
@@ -335,7 +335,7 @@ def send_message(current_user_id):
     # 创建 user message 和 assistant 占位，并立即提交，避免长连接导致事务回滚
     user_msg = Message(sid=sid, role='user', content=content)
     assistant_msg = Message(sid=sid, role='assistant', content='')
-    session.updated_at = datetime.now(timezone(timedelta(hours=8)))
+    session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.add_all([user_msg, assistant_msg])
     db.session.flush()  # 先拿到 mid
     assistant_mid = assistant_msg.mid

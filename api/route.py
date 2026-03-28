@@ -46,7 +46,7 @@ def get_favorite_detail(current_user_id, rid):
     })
 
 
-@route_bp.route('', methods=['POST'])
+@route_bp.route('/favorite', methods=['POST'])
 @token_required
 def add_favorite(current_user_id):
     """

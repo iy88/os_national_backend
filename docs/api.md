@@ -268,6 +268,15 @@ Content-Type: application/json
 }
 ```
 
+| 字段       | 类型     | 说明     |
+|----------|--------|------|
+| rid      | int    | 路线唯一标识 |
+| mid      | int    | 关联消息 ID |
+| title    | string | 路线标题   |
+| content  | string | 路线内容   |
+| createdAt | datetime | 创建时间  |
+| updatedAt | datetime | 更新时间  |
+
 **响应 (失败 - 409)**:
 
 ```json
@@ -417,8 +426,8 @@ Authorization: Bearer <token>
 | sid                  | int    | 会话唯一标识           |
 | title                | string | 会话标题（暂时用时间戳）     |
 | hasIncompleteMessage | bool   | 是否有未完成的流式消息（可恢复） |
-| createdAt            | string | 创建时间             |
-| updatedAt            | string | 最后更新时间           |
+| createdAt            | datetime | 创建时间             |
+| updatedAt            | datetime | 最后更新时间           |
 
 ---
 
@@ -460,6 +469,8 @@ Authorization: Bearer <token>
 | messages[].mid     | int      | 消息 ID            |
 | messages[].role    | string   | user / assistant |
 | messages[].content | string   | 消息内容             |
+| messages[].createdAt | datetime | 消息创建时间         |
+| messages[].updatedAt | datetime | 消息更新时间         |
 | incompleteMid      | int/null | 未完成的流式消息 ID（可恢复） |
 
 ---
@@ -484,10 +495,10 @@ Content-Type: application/json
 }
 ```
 
-| 字段      | 类型     | 必填 | 说明             |
-|---------|--------|----|----------------|
-| content | string | 是  | 消息内容           |
-| sid     | int    | 否  | 会话 ID，不传则创建新会话 |
+| 字段      | 类型     | 必填 | 说明                          |
+|---------|--------|----|-----------------------------|
+| content | string | 是* | 消息内容（新会话/继续会话必填，恢复模式可不传） |
+| sid     | int    | 否  | 会话 ID，不传则创建新会话            |
 
 **SSE 响应格式**:
 
@@ -547,11 +558,21 @@ Authorization: Bearer <token>
       "mid": 5,
       "title": "2026-03-27 10:30",
       "content": "云南5日游推荐路线：第一天抵达昆明...",
-      "createdAt": "2026-03-27T10:00:00Z"
+      "createdAt": "2026-03-27T10:00:00Z",
+      "updatedAt": "2026-03-27T10:00:00Z"
     }
   ]
 }
 ```
+
+| 字段       | 类型     | 说明     |
+|----------|--------|------|
+| rid      | int    | 路线唯一标识 |
+| mid      | int    | 关联消息 ID |
+| title    | string | 路线标题   |
+| content  | string | 路线内容   |
+| createdAt | datetime | 创建时间  |
+| updatedAt | datetime | 更新时间  |
 
 ---
 
@@ -578,23 +599,33 @@ Authorization: Bearer <token>
     "mid": 5,
     "title": "2026-03-27 10:30",
     "content": "云南5日游推荐路线：第一天抵达昆明...",
-    "createdAt": "2026-03-27T10:00:00Z"
+    "createdAt": "2026-03-27T10:00:00Z",
+    "updatedAt": "2026-03-27T10:00:00Z"
   }
 }
 ```
+
+| 字段       | 类型     | 说明     |
+|----------|--------|------|
+| rid      | int    | 路线唯一标识 |
+| mid      | int    | 关联消息 ID |
+| title    | string | 路线标题   |
+| content  | string | 路线内容   |
+| createdAt | datetime | 创建时间  |
+| updatedAt | datetime | 更新时间  |
 
 ---
 
 ### 13. 收藏路线
 
-- **URL**: `POST /route`
+- **URL**: `POST /route/favorite`
 - **描述**: 收藏 AI 返回的路线（只提供 mid，后端自动复制 session.title 和 message.content）
 - **认证**: 需要 Bearer Token
 
 **请求**:
 
 ```
-POST /route
+POST /route/favorite
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -617,10 +648,20 @@ Content-Type: application/json
     "mid": 5,
     "title": "2026-03-27 10:30",
     "content": "云南5日游推荐路线：第一天抵达昆明...",
-    "createdAt": "2026-03-27T10:00:00Z"
+    "createdAt": "2026-03-27T10:00:00Z",
+    "updatedAt": "2026-03-27T10:00:00Z"
   }
 }
 ```
+
+| 字段       | 类型     | 说明     |
+|----------|--------|------|
+| rid      | int    | 路线唯一标识 |
+| mid      | int    | 关联消息 ID |
+| title    | string | 路线标题   |
+| content  | string | 路线内容   |
+| createdAt | datetime | 创建时间  |
+| updatedAt | datetime | 更新时间  |
 
 **响应 (失败 - 409)**:
 
