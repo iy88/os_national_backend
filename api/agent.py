@@ -271,6 +271,38 @@ def get_session_detail(current_user_id, sid):
     })
 
 
+@agent_bp.route('/chat/title/edit/<int:sid>', methods=['PUT'])
+@token_required
+def edit_session_title(current_user_id, sid):
+    """
+    编辑会话标题
+
+    请求体:
+        title: string - 新标题
+    """
+    session = ConversationSession.query.filter_by(sid=sid, uid=current_user_id).first()
+    if not session:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+
+    data = request.get_json() or {}
+    title = data.get('title')
+    if not title:
+        return jsonify({'success': False, 'message': 'title is required'}), 400
+
+    session.title = title
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'session': {
+            'sid': session.sid,
+            'title': session.title,
+            'createdAt': session.created_at.isoformat() + 'Z',
+            'updatedAt': session.updated_at.isoformat() + 'Z' if session.updated_at else None
+        }
+    })
+
+
 @agent_bp.route('/message', methods=['POST'])
 @token_required
 def send_message(current_user_id):

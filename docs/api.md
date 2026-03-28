@@ -15,12 +15,14 @@
 - [Agent AI 接口](#agent-ai-接口)
   - [8. 获取会话列表](#8-获取会话列表)
   - [9. 获取会话详情](#9-获取会话详情)
-  - [10. 发送消息（SSE 流式）](#10-发送消息sse-流式)
+  - [10. 编辑会话标题](#10-编辑会话标题)
+  - [11. 发送消息（SSE 流式）](#11-发送消息sse-流式)
 - [路线收藏接口](#路线收藏接口)
-  - [11. 获取收藏列表](#11-获取收藏列表)
-  - [12. 获取收藏详情](#12-获取收藏详情)
-  - [13. 收藏路线](#13-收藏路线)
-  - [14. 删除收藏](#14-删除收藏)
+  - [12. 获取收藏列表](#12-获取收藏列表)
+  - [13. 获取收藏详情](#13-获取收藏详情)
+  - [14. 收藏路线](#14-收藏路线)
+  - [15. 编辑收藏路线](#15-编辑收藏路线)
+  - [16. 删除收藏](#16-删除收藏)
 - [工具接口](#工具接口)
   - [健康检查](#健康检查)
 
@@ -475,7 +477,61 @@ Authorization: Bearer <token>
 
 ---
 
-### 10. 发送消息（SSE 流式）
+### 10. 编辑会话标题
+
+- **URL**: `PUT /agent/travel-route-plan/chat/title/edit/:sid`
+- **描述**: 编辑指定会话的标题
+- **认证**: 需要 Bearer Token
+
+**请求**:
+
+```
+PUT /agent/travel-route-plan/chat/title/edit/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "新标题"
+}
+```
+
+| 字段   | 类型     | 必填 | 说明   |
+|-------|--------|----|------|
+| title | string | 是  | 新标题 |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "session": {
+    "sid": 1,
+    "title": "新标题",
+    "createdAt": "2026-03-27T10:00:00Z",
+    "updatedAt": "2026-03-27T12:00:00Z"
+  }
+}
+```
+
+| 字段       | 类型     | 说明   |
+|----------|--------|------|
+| sid      | int    | 会话 ID |
+| title    | string | 会话标题 |
+| createdAt | datetime | 创建时间 |
+| updatedAt | datetime | 更新时间 |
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Session not found"
+}
+```
+
+---
+
+### 11. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/travel-route-plan/message`
 - **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应
@@ -557,7 +613,6 @@ Authorization: Bearer <token>
       "rid": 1,
       "mid": 5,
       "title": "2026-03-27 10:30",
-      "content": "云南5日游推荐路线：第一天抵达昆明...",
       "createdAt": "2026-03-27T10:00:00Z",
       "updatedAt": "2026-03-27T10:00:00Z"
     }
@@ -570,7 +625,6 @@ Authorization: Bearer <token>
 | rid      | int    | 路线唯一标识 |
 | mid      | int    | 关联消息 ID |
 | title    | string | 路线标题   |
-| content  | string | 路线内容   |
 | createdAt | datetime | 创建时间  |
 | updatedAt | datetime | 更新时间  |
 
@@ -643,13 +697,57 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "Route favorited"
+}
+```
+
+**响应 (失败 - 409)**:
+
+```json
+{
+  "success": false,
+  "message": "Already favorited"
+}
+```
+
+---
+
+### 14. 编辑收藏路线
+
+- **URL**: `PUT /route/edit/:rid`
+- **描述**: 编辑收藏路线的标题或内容
+- **认证**: 需要 Bearer Token
+
+**请求**:
+
+```
+PUT /route/edit/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "新标题",
+  "content": "新内容"
+}
+```
+
+| 字段     | 类型     | 必填 | 说明     |
+|---------|--------|----|------|
+| title   | string | 否  | 新标题   |
+| content | string | 否  | 新内容   |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
   "route": {
     "rid": 1,
     "mid": 5,
-    "title": "2026-03-27 10:30",
-    "content": "云南5日游推荐路线：第一天抵达昆明...",
+    "title": "新标题",
+    "content": "新内容",
     "createdAt": "2026-03-27T10:00:00Z",
-    "updatedAt": "2026-03-27T10:00:00Z"
+    "updatedAt": "2026-03-27T12:00:00Z"
   }
 }
 ```
@@ -663,18 +761,18 @@ Content-Type: application/json
 | createdAt | datetime | 创建时间  |
 | updatedAt | datetime | 更新时间  |
 
-**响应 (失败 - 409)**:
+**响应 (失败 - 404)**:
 
 ```json
 {
   "success": false,
-  "message": "Already favorited"
+  "message": "Route not found"
 }
 ```
 
 ---
 
-### 14. 删除收藏
+### 15. 删除收藏
 
 - **URL**: `DELETE /route/delete/:rid`
 - **描述**: 删除指定的收藏路线

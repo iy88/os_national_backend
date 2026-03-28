@@ -16,8 +16,8 @@ def list_favorites(current_user_id):
         'rid': route.rid,
         'mid': route.mid,
         'title': route.title,
-        'content': route.content,
-        'createdAt': route.created_at.isoformat() + 'Z'
+        'createdAt': route.created_at.isoformat() + 'Z',
+        'updatedAt': route.updated_at.isoformat() + 'Z' if route.updated_at else None
     } for route in routes]
 
     return jsonify({
@@ -41,7 +41,8 @@ def get_favorite_detail(current_user_id, rid):
             'mid': route.mid,
             'title': route.title,
             'content': route.content,
-            'createdAt': route.created_at.isoformat() + 'Z'
+            'createdAt': route.created_at.isoformat() + 'Z',
+            'updatedAt': route.updated_at.isoformat() + 'Z' if route.updated_at else None
         }
     })
 
@@ -93,14 +94,52 @@ def add_favorite(current_user_id):
 
     return jsonify({
         'success': True,
+        'message': 'Route favorited'
+    }), 201
+
+
+@route_bp.route('/edit/<int:rid>', methods=['PUT'])
+@token_required
+def edit_favorite(current_user_id, rid):
+    """
+    编辑收藏路线（更新 title 和/或 content）
+
+    请求体:
+        title: string (可选)
+        content: string (可选)
+    """
+    route = Route.query.filter_by(rid=rid, uid=current_user_id).first()
+    if not route:
+        return jsonify({'success': False, 'message': 'Route not found'}), 404
+
+    data = request.get_json() or {}
+    title = data.get('title')
+    content = data.get('content')
+
+    if not title and not content:
+        return jsonify({'success': False, 'message': 'title or content is required'}), 400
+
+    if title is not None:
+        route.title = title
+    if content is not None:
+        route.content = content
+
+    from datetime import datetime, timezone
+    route.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
         'route': {
             'rid': route.rid,
             'mid': route.mid,
             'title': route.title,
             'content': route.content,
-            'createdAt': route.created_at.isoformat() + 'Z'
+            'createdAt': route.created_at.isoformat() + 'Z',
+            'updatedAt': route.updated_at.isoformat() + 'Z' if route.updated_at else None
         }
-    }), 201
+    })
 
 
 @route_bp.route('/delete/<int:rid>', methods=['DELETE'])
