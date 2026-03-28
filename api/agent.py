@@ -287,10 +287,12 @@ def send_message(current_user_id):
 
     # 验证会话
     session = None
+    existing_session = False
     if sid:
         session = ConversationSession.query.filter_by(sid=sid, uid=current_user_id).first()
         if not session:
             return jsonify({'success': False, 'message': 'Session not found'}), 404
+        existing_session = True
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
     app_obj = current_app._get_current_object()
@@ -340,7 +342,12 @@ def send_message(current_user_id):
     db.session.commit()  # 先落盘，保证 session/user/assistant 占位可见
 
     # 构建消息列表（排除当前 assistant 空占位）
-    messages = build_messages(sid, exclude_mid=assistant_mid)
+    # 对于现有 ai_session 的会话，无需获取历史 message，恢复 1h 内的 session 只需要 prompt，或初始化 session
+    messages = build_messages(sid, exclude_mid=assistant_mid) \
+        if not ai_session_id and existing_session \
+        else [{"role": "user", "content": content}]
+
+    print(existing_session, messages)
 
     # 初始化 Redis Stream 运行时并启动唯一生产者。
     set_stream_mid(sid, assistant_mid)

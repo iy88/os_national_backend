@@ -31,6 +31,7 @@ class AIProvider(ABC):
 
         Yields:
             str: 每次收到的文本片段
+            :param session_id:
         """
         pass
 
@@ -42,6 +43,7 @@ class AIProvider(ABC):
         Args:
             messages: 消息列表
             completed_content: 已经传输完成的内容（用于去重或跳过）
+            :param session_id:
         """
         pass
 
@@ -51,6 +53,7 @@ class AIProvider(ABC):
         pass
 
 
+# noinspection DuplicatedCode
 class DashScopeProvider(AIProvider):
     """阿里云 DashScope AI Provider"""
 
@@ -68,10 +71,11 @@ class DashScopeProvider(AIProvider):
             messages: 消息列表，支持 messages 或 prompt
 
         Yields:
-            str: 每次收到的文本片段
+            str:
+            :param messages: 每次收到的文本片段
+            :param session_id:
         """
         self._last_session_id = session_id
-
         # 构建 prompt（如果只有一条消息，直接用 prompt）
         if len(messages) == 1 and messages[0].get('role') == 'user':
             prompt = messages[0]['content']
@@ -95,32 +99,11 @@ class DashScopeProvider(AIProvider):
                 if response.output and response.output.text:
                     yield response.output.text
         else:
-            # 多轮对话使用 messages 参数
-            # 将 messages 转换为 DashScope 格式
-            dashscope_messages = []
-            for msg in messages:
-                if msg['role'] == 'user':
-                    dashscope_messages.append({
-                        'role': 'user',
-                        'content': msg['content']
-                    })
-                elif msg['role'] == 'assistant':
-                    dashscope_messages.append({
-                        'role': 'assistant',
-                        'content': msg['content']
-                    })
-                elif msg['role'] == 'system':
-                    dashscope_messages.append({
-                        'role': 'system',
-                        'content': msg['content']
-                    })
-
+            # 多轮对话恢复使用 messages 参数
             responses = Application.call(
                 api_key=self.api_key,
                 app_id=self.app_id,
-                prompt=messages[-1]['content'] if messages else '',
-                messages=dashscope_messages[:-1] if len(dashscope_messages) > 1 else None,
-                session_id=session_id,
+                messages=messages,
                 stream=True,
                 incremental_output=True
             )
