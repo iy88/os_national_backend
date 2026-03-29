@@ -6,11 +6,12 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context, cu
 
 from config import Config
 from models import db, RoleplayCharacter, RoleplayCharacterDetail, RoleplaySession, RoleplayMessage
-from utils.ai_provider import get_ai_provider
+from utils.ai_provider import get_ai_provider, InvalidAISessionError
 from utils.jwt_utils import token_required
 from utils.redis_client import (
     get_rp_stream_mid,
     set_rp_stream_mid,
+    clear_rp_stream_mid,
     append_rp_stream_content,
     get_rp_stream_content,
     clear_rp_stream,
@@ -25,6 +26,9 @@ from utils.redis_client import (
     refresh_rp_stream_producer_lock,
     get_rp_stream_producer_lock,
     release_rp_stream_producer_lock,
+    get_rp_ai_session_id,
+    set_rp_ai_session_id,
+    clear_rp_ai_session_id,
 )
 
 roleplay_bp = Blueprint('roleplay', __name__, url_prefix='/agent/roleplay')
@@ -127,7 +131,16 @@ def _finalize_error_result(uid: int, rid: int, mid: int, err: Exception, generat
     set_rp_stream_state(mid, 'error', message=error_content)
 
 
-def _run_stream_producer(app, uid: int, rid: int, mid: int, base_messages: list, app_id: str):
+def _run_stream_producer(
+    app,
+    uid: int,
+    rid: int,
+    mid: int,
+    base_messages: list,
+    app_id: str,
+    ai_session_id: str | None = None,
+    fallback_messages: list | None = None
+):
     """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件"""
     with app.app_context():
         ai_provider = get_ai_provider(
@@ -139,19 +152,40 @@ def _run_stream_producer(app, uid: int, rid: int, mid: int, base_messages: list,
         set_rp_stream_state(mid, 'running')
         refresh_rp_stream_producer_lock(uid, rid)
 
-        def produce(active_messages: list):
-            for chunk in ai_provider.chat_stream(active_messages, session_id=None):
+        def produce(active_messages: list, active_session_id: str | None):
+            for chunk in ai_provider.chat_stream(active_messages, session_id=active_session_id):
                 append_rp_stream_content(mid, chunk)
                 append_rp_stream_event(mid, 'content', content=chunk)
                 refresh_rp_stream_producer_lock(uid, rid)
 
         try:
             try:
-                produce(base_messages)
+                produce(base_messages, ai_session_id)
+            except InvalidAISessionError as invalid_session_err:
+                print(f"Invalid roleplay AI session_id detected uid={uid}, rid={rid}: {invalid_session_err}")
+                clear_rp_ai_session_id(uid, rid)
+                recover_messages = fallback_messages if fallback_messages is not None else base_messages
+                produce(recover_messages, None)
             except Exception as gen_err:
-                print(f"Roleplay AI generation error uid={uid}, rid={rid}, mid={mid}: {gen_err}")
-                _finalize_error_result(uid, rid, mid, gen_err, generation_error=True)
-                return
+                if ai_session_id and fallback_messages is not None:
+                    print(
+                        f"Roleplay AI generation failed with cached session uid={uid}, rid={rid}, "
+                        f"mid={mid}, fallback to full messages: {gen_err}"
+                    )
+                    clear_rp_ai_session_id(uid, rid)
+                    try:
+                        produce(fallback_messages, None)
+                    except Exception as fallback_err:
+                        print(
+                            f"Roleplay AI fallback generation error uid={uid}, rid={rid}, "
+                            f"mid={mid}: {fallback_err}"
+                        )
+                        _finalize_error_result(uid, rid, mid, fallback_err, generation_error=True)
+                        return
+                else:
+                    print(f"Roleplay AI generation error uid={uid}, rid={rid}, mid={mid}: {gen_err}")
+                    _finalize_error_result(uid, rid, mid, gen_err, generation_error=True)
+                    return
 
             full_content = get_rp_stream_content(mid)
             try:
@@ -161,16 +195,34 @@ def _run_stream_producer(app, uid: int, rid: int, mid: int, base_messages: list,
                 _finalize_error_result(uid, rid, mid, persist_err, generation_error=False)
                 return
 
+            new_ai_session_id = ai_provider.get_last_session_id()
+            if new_ai_session_id:
+                set_rp_ai_session_id(uid, rid, new_ai_session_id)
+
             append_rp_stream_event(mid, 'done')
             set_rp_stream_state(mid, 'done')
         except Exception as e:
             print(f"Roleplay streaming internal error uid={uid}, rid={rid}, mid={mid}: {e}")
             _finalize_error_result(uid, rid, mid, e, generation_error=False)
         finally:
-            release_rp_stream_producer_lock(uid, rid)
+            try:
+                clear_rp_stream_mid(uid, rid)
+            except Exception as cleanup_err:
+                print(f"Clear roleplay stream marker failed uid={uid}, rid={rid}, mid={mid}: {cleanup_err}")
+            finally:
+                release_rp_stream_producer_lock(uid, rid)
 
 
-def _ensure_stream_producer(app, uid: int, rid: int, mid: int, messages: list, app_id: str):
+def _ensure_stream_producer(
+    app,
+    uid: int,
+    rid: int,
+    mid: int,
+    messages: list,
+    app_id: str,
+    ai_session_id: str | None = None,
+    fallback_messages: list | None = None
+):
     """确保同一个 uid/rid/mid 只有一个生产者"""
     lock_mid = get_rp_stream_producer_lock(uid, rid)
     if lock_mid == str(mid):
@@ -181,7 +233,7 @@ def _ensure_stream_producer(app, uid: int, rid: int, mid: int, messages: list, a
 
     producer = threading.Thread(
         target=_run_stream_producer,
-        args=(app, uid, rid, mid, messages, app_id),
+        args=(app, uid, rid, mid, messages, app_id, ai_session_id, fallback_messages),
         daemon=True
     )
     producer.start()
@@ -321,7 +373,8 @@ def send_message(current_user_id, rid):
     向角色发送消息，SSE 流式响应
 
     请求体:
-        content: str - 消息内容
+        content: str - 消息内容（重生成模式可不传）
+        regenerateMid: int (可选) - 重生成的 assistant 消息 ID，传了此参数则进入重生成模式
     """
     character = RoleplayCharacter.query.get(rid)
     if not character:
@@ -332,15 +385,67 @@ def send_message(current_user_id, rid):
 
     data = request.get_json() or {}
     content = (data.get('content') or '').strip()
-    if not content:
-        return jsonify({'success': False, 'message': 'content is required'}), 400
+    regenerate_mid = data.get('regenerateMid')
 
     app_id = Config.ROLEPLAY_APP_ID_MAP.get(character.type)
     if not app_id:
         return jsonify({'success': False, 'message': 'Character type not configured'}), 500
 
+    ai_session_id = get_rp_ai_session_id(current_user_id, rid)
+
     # noinspection PyUnresolvedReferences,PyProtectedMember
     app_obj = current_app._get_current_object()
+
+    # ========== 重生成模式 ==========
+    if regenerate_mid is not None:
+        # 1. 验证 regenerateMid
+        old_msg = RoleplayMessage.query.filter_by(
+            mid=regenerate_mid,
+            uid=current_user_id,
+            rid=rid,
+            role='assistant'
+        ).first()
+        if not old_msg:
+            return jsonify({'success': False, 'message': 'Message not found or not assistant'}), 404
+
+        # 2. 删除旧的 assistant 消息
+        db.session.delete(old_msg)
+        db.session.flush()
+
+        # 3. 创建新的 assistant 占位
+        assistant_msg = RoleplayMessage(uid=current_user_id, rid=rid, role='assistant', content='')
+        session = RoleplaySession.query.filter_by(uid=current_user_id, rid=rid).first()
+        if not session:
+            session = RoleplaySession(uid=current_user_id, rid=rid)
+            db.session.add(session)
+            db.session.flush()
+        session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.session.add(assistant_msg)
+        db.session.flush()
+        assistant_mid = assistant_msg.mid
+        db.session.commit()
+
+        # 4. 构建完整消息列表（排除新 assistant 占位），prepend system prompt
+        messages = [{"role": "system", "content": system_prompt}] + _build_messages(
+            current_user_id,
+            rid,
+            exclude_mid=assistant_mid
+        )
+
+        set_rp_stream_mid(current_user_id, rid, assistant_mid)
+        init_rp_stream_runtime(assistant_mid)
+        _ensure_stream_producer(
+            app_obj,
+            current_user_id,
+            rid,
+            assistant_mid,
+            messages,
+            app_id,
+            ai_session_id=None,
+            fallback_messages=None
+        )
+
+        return sse_response(lambda: _consume_stream_events(current_user_id, rid, assistant_mid, resume=False))
 
     # 检查是否有进行中的流（恢复模式）
     existing_mid = get_rp_stream_mid(current_user_id, rid)
@@ -355,12 +460,29 @@ def send_message(current_user_id, rid):
         else:
             if lock_mid != str(existing_mid) and state.get('state') == 'running':
                 messages = [{"role": "system", "content": system_prompt}] + _build_messages(current_user_id, rid, exclude_mid=existing_mid)
-                _ensure_stream_producer(app_obj, current_user_id, rid, existing_mid, messages, app_id)
+                _ensure_stream_producer(
+                    app_obj,
+                    current_user_id,
+                    rid,
+                    existing_mid,
+                    messages,
+                    app_id,
+                    ai_session_id=ai_session_id,
+                    fallback_messages=messages if ai_session_id else None
+                )
 
             return sse_response(lambda: _consume_stream_events(current_user_id, rid, existing_mid, resume=True))
 
+    # 非恢复模式必须提供 prompt
+    if not content:
+        return jsonify({'success': False, 'message': 'content is required'}), 400
+
     # 查找或创建 session
     session = RoleplaySession.query.filter_by(uid=current_user_id, rid=rid).first()
+    existing_session = bool(session)
+    if not existing_session and ai_session_id:
+        clear_rp_ai_session_id(current_user_id, rid)
+        ai_session_id = None
     if not session:
         session = RoleplaySession(uid=current_user_id, rid=rid)
         db.session.add(session)
@@ -376,12 +498,33 @@ def send_message(current_user_id, rid):
     db.session.commit()
 
     # 构建消息列表（排除当前 assistant 空占位）， prepend system prompt
-    messages = [{"role": "system", "content": system_prompt}] + _build_messages(current_user_id, rid, exclude_mid=assistant_mid)
+    full_messages = [{"role": "system", "content": system_prompt}] + _build_messages(
+        current_user_id,
+        rid,
+        exclude_mid=assistant_mid
+    )
+
+    # 已有历史会话且 session_id 有效时，仅发送最新用户 prompt；失败时回退全量 messages。
+    if existing_session and ai_session_id:
+        messages = [{"role": "user", "content": content}]
+        fallback_messages = full_messages
+    else:
+        messages = full_messages
+        fallback_messages = None
 
     # 初始化 Redis Stream 运行时并启动唯一生产者
     set_rp_stream_mid(current_user_id, rid, assistant_mid)
     init_rp_stream_runtime(assistant_mid)
-    _ensure_stream_producer(app_obj, current_user_id, rid, assistant_mid, messages, app_id)
+    _ensure_stream_producer(
+        app_obj,
+        current_user_id,
+        rid,
+        assistant_mid,
+        messages,
+        app_id,
+        ai_session_id=ai_session_id if existing_session else None,
+        fallback_messages=fallback_messages
+    )
 
     return sse_response(lambda: _consume_stream_events(current_user_id, rid, assistant_mid, resume=False))
 

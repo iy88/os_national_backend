@@ -319,3 +319,18 @@ def get_rp_stream_producer_lock(uid: int, rid: int) -> str | None:
 def release_rp_stream_producer_lock(uid: int, rid: int):
     """释放生产者锁。"""
     redis_client.delete(_rp_stream_key(uid, rid, 'producer'))
+
+
+def get_rp_ai_session_id(uid: int, rid: int) -> str | None:
+    """获取角色对话绑定的 AI session_id。"""
+    return redis_client.get(_rp_stream_key(uid, rid, 'ai_session'))
+
+
+def set_rp_ai_session_id(uid: int, rid: int, ai_session_id: str):
+    """保存角色对话绑定的 AI session_id。"""
+    redis_client.setex(_rp_stream_key(uid, rid, 'ai_session'), AI_SESSION_TTL, ai_session_id)
+
+
+def clear_rp_ai_session_id(uid: int, rid: int):
+    """清除角色对话绑定的 AI session_id。"""
+    redis_client.delete(_rp_stream_key(uid, rid, 'ai_session'))

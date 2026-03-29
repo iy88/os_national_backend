@@ -966,11 +966,11 @@ Authorization: Bearer <token>
 ### 19. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/roleplay/message/send/:rid`
-- **描述**: 向角色发送消息，SSE 流式返回响应
+- **描述**: 向角色发送消息，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
 - **认证**: 需要 Bearer Token
 - **返回**: `text/event-stream`
 
-**请求**:
+**请求（正常发送）**:
 
 ```
 POST /agent/roleplay/message/send/1
@@ -982,9 +982,35 @@ Content-Type: application/json
 }
 ```
 
-| 字段     | 类型     | 必填 | 说明     |
-|---------|--------|----|------|
-| content | string | 是  | 消息内容 |
+| 字段     | 类型     | 必填 | 说明                          |
+|---------|--------|----|-----------------------------|
+| content | string | 是* | 消息内容（新会话/继续会话必填，恢复模式可不传） |
+| rid     | int    | 是  | 角色 ID（路径参数）               |
+
+**请求（重新生成）**:
+
+```
+POST /agent/roleplay/message/send/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "regenerateMid": 123
+}
+```
+
+| 字段           | 类型 | 必填 | 说明                          |
+|--------------|----|----|-----------------------------|
+| rid          | int | 是  | 角色 ID（路径参数）               |
+| regenerateMid | int | 是  | 要重新生成的 assistant 消息 ID    |
+| content       | string | 否  | 重新生成模式下不传（忽略）                  |
+
+**重新生成说明**：
+- 传入 `regenerateMid` 时进入重生成模式，忽略 `content`
+- `regenerateMid` 必须是该用户该角色会话下的 assistant 消息
+- 旧消息会被删除，用新消息替代
+- 强制从数据库读取完整消息历史
+- system prompt 会重新注入
 
 **SSE 响应格式**:
 
