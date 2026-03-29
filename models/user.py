@@ -38,13 +38,11 @@ class File(db.Model):
     __tablename__ = 'files'
 
     fid = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    uid = db.Column(db.Integer, db.ForeignKey('users.uid', ondelete='CASCADE'), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
     secure_filename = db.Column(db.String(255), nullable=False, unique=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     __table_args__ = (
-        db.Index('idx_files_uid', 'uid'),
         db.Index('idx_files_secure_filename', 'secure_filename'),
     )

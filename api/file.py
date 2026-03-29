@@ -65,7 +65,6 @@ def upload_avatar():
 
     # 保存新文件记录到数据库
     new_file = File(
-        uid=user_id,
         original_filename=original_filename,
         secure_filename=secure_filename
     )

@@ -28,7 +28,6 @@
 | 字段                | 类型           | 约束                               | 说明        |
 |-------------------|--------------|----------------------------------|-----------|
 | fid               | INT          | PRIMARY KEY, AUTO_INCREMENT      | 文件唯一标识    |
-| uid               | INT          | FOREIGN KEY(users.uid), NOT NULL | 关联 User 表 |
 | original_filename | VARCHAR(255) | NOT NULL                         | 原始文件名     |
 | secure_filename   | VARCHAR(255) | UNIQUE, NOT NULL                 | 安全文件名（唯一） |
 | created_at        | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 上传时间      |
@@ -38,7 +37,7 @@
 
 - `UserInfo.uid` 外键关联 `User.uid` (ON DELETE CASCADE)，一对一关系，注册时自动创建
 - `UserInfo.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示用户头像
-- `File.uid` 外键关联 `User.uid` (ON DELETE CASCADE)，多对一关系（一个用户可上传多个文件）
+- File 表不再与 User 绑定，改为纯文件存储（供用户头像、角色头像等使用）
 
 ## ConversationSession 表 (conversation_sessions)
 
@@ -80,3 +79,56 @@
 - `Route.mid` 外键关联 `Message.mid` (ON DELETE CASCADE)，一个消息可被多个收藏引用
 
 **关系链**：User (1) → Session (N) → Message (N) ← Route (1)
+
+## RoleplayCharacter 表 (roleplay_characters)
+
+| 字段         | 类型           | 约束                                  | 说明                        |
+|------------|--------------|-------------------------------------|---------------------------|
+| rid        | INT          | PRIMARY KEY, AUTO_INCREMENT         | 角色唯一标识                    |
+| type       | VARCHAR(20)  | NOT NULL                            | 类型（game_expert=游戏达人 / esports_player=电竞选手 / game_hero=游戏英雄） |
+| name       | VARCHAR(80)  | NOT NULL                            | 角色显示名                      |
+| avatar_id  | INT          | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID                    |
+| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP           | 创建时间                      |
+| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP         | 更新时间                      |
+
+## RoleplayCharacterDetail 表 (roleplay_character_details)
+
+| 字段         | 类型          | 约束                                  | 说明                        |
+|------------|-------------|-------------------------------------|---------------------------|
+| rid        | INT         | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 角色唯一标识（关联 RoleplayCharacter） |
+| bio        | TEXT        | NULLABLE                            | 简介                        |
+| phrases    | TEXT        | NULLABLE                            | 名人名言/短语（JSON 数组）           |
+| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE    | 头像文件 ID                    |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间                      |
+
+## RoleplaySession 表 (roleplay_sessions)
+
+| 字段         | 类型           | 约束                                  | 说明                        |
+|------------|--------------|-------------------------------------|---------------------------|
+| uid        | INT          | PRIMARY KEY, FOREIGN KEY(users.uid) | 关联 User 表                |
+| rid        | INT          | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 关联 RoleplayCharacter 表 |
+| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP           | 创建时间                      |
+| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP         | 更新时间                      |
+
+**唯一约束**：(uid, rid) 唯一确定一个会话
+
+## RoleplayMessage 表 (roleplay_messages)
+
+| 字段         | 类型          | 约束                                               | 说明               |
+|------------|-------------|--------------------------------------------------|------------------|
+| mid        | INT         | PRIMARY KEY, AUTO_INCREMENT                      | 消息唯一标识           |
+| uid        | INT         | FOREIGN KEY(users.uid), NOT NULL                 | 关联 User 表         |
+| rid        | INT         | FOREIGN KEY(roleplay_characters.rid), NOT NULL   | 所属角色              |
+| role       | VARCHAR(20) | NOT NULL                                         | user / assistant |
+| content    | TEXT        | NOT NULL                                         | 消息内容             |
+| created_at | DATETIME    | DEFAULT CURRENT_TIMESTAMP                        | 创建时间             |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP                      | 更新时间             |
+
+## Roleplay 表关系
+
+- `RoleplayCharacter.uid` 无（角色表不关联用户）
+- `RoleplayCharacterDetail.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)，一对一关系
+- `RoleplaySession.uid` 外键关联 `User.uid` (ON DELETE CASCADE)
+- `RoleplaySession.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)
+- `RoleplayMessage.uid` 外键关联 `User.uid` (ON DELETE CASCADE)
+- `RoleplayMessage.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)

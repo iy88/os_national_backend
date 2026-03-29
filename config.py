@@ -53,3 +53,15 @@ class Config:
     AI_API_KEY = os.getenv('AI_API_KEY')
     AI_APP_ID = os.getenv('AI_APP_ID')
     AI_TITLE_MODEL = os.getenv('AI_TITLE_MODEL', 'qwen3.5-plus')
+
+    # Roleplay App IDs
+    ROLEPLAY_APP_ID_GAME_EXPERT = os.getenv('ROLEPLAY_APP_ID_GAME_EXPERT')
+    ROLEPLAY_APP_ID_ESPORTS_PLAYER = os.getenv('ROLEPLAY_APP_ID_ESPORTS_PLAYER')
+    ROLEPLAY_APP_ID_GAME_HERO = os.getenv('ROLEPLAY_APP_ID_GAME_HERO')
+
+    # Roleplay type to app_id mapping
+    ROLEPLAY_APP_ID_MAP = {
+        'game_expert': ROLEPLAY_APP_ID_GAME_EXPERT,
+        'esports_player': ROLEPLAY_APP_ID_ESPORTS_PLAYER,
+        'game_hero': ROLEPLAY_APP_ID_GAME_HERO,
+    }

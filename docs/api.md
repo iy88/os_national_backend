@@ -23,6 +23,11 @@
   - [14. 收藏路线](#14-收藏路线)
   - [15. 编辑收藏路线](#15-编辑收藏路线)
   - [16. 删除收藏](#16-删除收藏)
+- [Roleplay 角色扮演接口](#roleplay-角色扮演接口)
+  - [17. 获取角色列表](#17-获取角色列表)
+  - [18. 获取角色详情](#18-获取角色详情)
+  - [19. 发送消息（SSE 流式）](#19-发送消息sse-流式)
+  - [20. 获取对话列表](#20-获取对话列表)
 - [工具接口](#工具接口)
   - [健康检查](#健康检查)
 
@@ -837,3 +842,222 @@ Authorization: Bearer <token>
   "message": "Route deleted"
 }
 ```
+
+---
+
+## Roleplay 角色扮演接口
+
+### 角色类型说明
+
+| type | 说明 | 场景示例 |
+|------|------|---------|
+| game_expert | 游戏达人 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
+| game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
+
+### 17. 获取角色列表
+
+- **URL**: `GET /agent/roleplay/list/:type`
+- **描述**: 获取指定类型的角色列表（不含详情）
+- **认证**: 需要 Bearer Token
+
+**路径参数**:
+
+| 参数  | 类型   | 必填 | 说明                                              |
+|-------|-------|----|-------------------------------------------------|
+| type  | string | 是  | 角色类型：game_expert / esports_player / game_hero |
+
+**请求**:
+
+```
+GET /agent/roleplay/list/game_expert
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "characters": [
+    {
+      "rid": 1,
+      "name": "游戏达人小王",
+      "avatarId": 1,
+      "createdAt": "2026-03-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+| 字段       | 类型     | 说明    |
+|----------|--------|-------|
+| rid      | int    | 角色唯一标识 |
+| name     | string | 角色显示名  |
+| avatarId | int    | 头像文件 ID |
+| createdAt | datetime | 创建时间 |
+
+**响应 (失败 - 400)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid character type"
+}
+```
+
+---
+
+### 18. 获取角色详情
+
+- **URL**: `GET /agent/roleplay/detail/:rid`
+- **描述**: 获取角色的详细信息（含简介、名言短语等）
+- **认证**: 需要 Bearer Token
+
+**请求**:
+
+```
+GET /agent/roleplay/detail/1
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "character": {
+    "rid": 1,
+    "type": "game_expert",
+    "name": "游戏达人小王",
+    "avatarId": 1,
+    "bio": "10年游戏经验，专注RPG和策略游戏",
+    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
+    "detailAvatarId": 1,
+    "updatedAt": "2026-03-27T10:00:00Z",
+    "createdAt": "2026-03-27T09:00:00Z"
+  }
+}
+```
+
+| 字段            | 类型       | 说明       |
+|---------------|----------|----------|
+| rid           | int      | 角色唯一标识   |
+| type          | string   | 角色类型     |
+| name          | string   | 角色显示名    |
+| avatarId      | int      | 角色列表头像 ID |
+| bio           | string   | 角色简介     |
+| phrases       | string[] | 名言/短语数组  |
+| detailAvatarId | int     | 详情页头像 ID |
+| updatedAt     | datetime | 详情更新时间   |
+| createdAt     | datetime | 角色创建时间   |
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Character not found"
+}
+```
+
+---
+
+### 19. 发送消息（SSE 流式）
+
+- **URL**: `POST /agent/roleplay/message/send/:rid`
+- **描述**: 向角色发送消息，SSE 流式返回响应
+- **认证**: 需要 Bearer Token
+- **返回**: `text/event-stream`
+
+**请求**:
+
+```
+POST /agent/roleplay/message/send/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "content": "你好，我最近想玩一些RPG游戏，有什么推荐吗？"
+}
+```
+
+| 字段     | 类型     | 必填 | 说明     |
+|---------|--------|----|------|
+| content | string | 是  | 消息内容 |
+
+**SSE 响应格式**:
+
+```
+data: {"type": "start", "uid": 1, "rid": 1, "mid": 123}
+
+data: {"type": "content", "content": "你好！"}
+data: {"type": "content", "content": "很高兴为你推荐..."}
+
+: ping
+data: {"type": "done", "uid": 1, "rid": 1, "mid": 123}
+```
+
+**说明**:
+- `start`: 流开始，包含用户 ID、角色 ID 和消息 ID
+- `content`: 实时增量发送
+- `catchup`: 恢复模式专用
+- `error`: 错误时发送，错误消息会落盘
+- `done`: 流结束
+- `ping`: keepalive
+
+**错误处理**：与 Agent AI 接口相同。
+
+**恢复模式**：与 Agent AI 接口相同。
+
+---
+
+### 20. 获取对话列表
+
+- **URL**: `GET /agent/roleplay/message/list/:rid`
+- **描述**: 获取与角色的所有对话记录（按时间升序）
+- **认证**: 需要 Bearer Token
+
+**请求**:
+
+```
+GET /agent/roleplay/message/list/1
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "messages": [
+    {"mid": 1, "role": "user", "content": "你好", "createdAt": "2026-03-27T10:00:00Z"},
+    {"mid": 2, "role": "assistant", "content": "你好！有什么游戏问题可以问我", "createdAt": "2026-03-27T10:00:05Z"},
+    {"mid": 3, "role": "user", "content": "推荐一些RPG游戏", "createdAt": "2026-03-27T10:01:00Z"},
+    {"mid": 4, "role": "assistant", "content": "推荐《巫师3》、《老滚5》...", "createdAt": "2026-03-27T10:01:10Z"}
+  ],
+  "incompleteMid": null
+}
+```
+
+| 字段                 | 类型        | 说明               |
+|--------------------|----------|------------------|
+| messages           | array    | 消息列表（按时间升序）    |
+| messages[].mid     | int      | 消息 ID            |
+| messages[].role    | string   | user / assistant  |
+| messages[].content | string   | 消息内容            |
+| messages[].createdAt | datetime | 消息创建时间          |
+| incompleteMid      | int/null | 未完成的流式消息 ID（可恢复） |
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Character not found"
+}
+```
+
+---
+
+## 工具接口
