@@ -52,3 +52,4 @@ class Config:
     AI_PROVIDER = os.getenv('AI_PROVIDER', 'dashscope')
     AI_API_KEY = os.getenv('AI_API_KEY')
     AI_APP_ID = os.getenv('AI_APP_ID')
+    AI_TITLE_MODEL = os.getenv('AI_TITLE_MODEL', 'qwen3.5-plus')

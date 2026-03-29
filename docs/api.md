@@ -534,11 +534,11 @@ Content-Type: application/json
 ### 11. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/travel-route-plan/message`
-- **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应
+- **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
 - **认证**: 需要 Bearer Token
 - **返回**: `text/event-stream`
 
-**请求**:
+**请求（正常发送）**:
 
 ```
 POST /agent/travel-route-plan/message
@@ -556,6 +556,32 @@ Content-Type: application/json
 | content | string | 是* | 消息内容（新会话/继续会话必填，恢复模式可不传） |
 | sid     | int    | 否  | 会话 ID，不传则创建新会话            |
 
+**请求（重新生成）**:
+
+```
+POST /agent/travel-route-plan/message
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "sid": 1,
+  "regenerateMid": 123
+}
+```
+
+| 字段           | 类型 | 必填 | 说明                                       |
+|--------------|----|----|------------------------------------------|
+| sid          | int | 是  | 会话 ID                                    |
+| regenerateMid | int | 是  | 要重新生成的 assistant 消息 ID             |
+| content       | string | 否  | 重新生成模式下不传（忽略）                          |
+
+**重新生成说明**：
+- 传入 `regenerateMid` 时进入重生成模式，忽略 `content`
+- `regenerateMid` 必须是该用户会话下的 assistant 消息
+- 旧消息会被删除，用新消息替代
+- 强制从数据库读取完整消息历史，不使用 AI session_id
+- 若 `regenerateMid` 是该会话第一条 assistant 消息，则新消息也会重新生成标题
+
 **SSE 响应格式**:
 
 ```
@@ -565,26 +591,44 @@ data: {"type": "content", "content": "云南"}
 data: {"type": "content", "content": "5天"}
 data: {"type": "content", "content": "推荐路线：第一天抵达昆明..."}
 
-data: {"type": "done", "sid": 1, "mid": 123}
+: ping
+data: {"type": "done", "sid": 1, "mid": 123, "title": "云南5日游推荐"}
 ```
 
 **说明**:
 - `start`: 流开始，包含会话 ID 和消息 ID
 - `content`: **实时增量发送**，每个 chunk 都单独发送一个 SSE 事件
-- `done`: 流结束
+- `catchup`: 恢复模式专用，直接读取 Redis 缓存的全量内容一次性推送
+- `error`: 发生错误时发送，**错误消息会落盘到数据库**；随后仍会发送 `done` 事件结束流
+- `done`: 流结束，**第一轮对话/重新生成完成时 payload 包含 `title` 字段**（自动生成的会话标题，10～18字）；错误处理完成后也会发送 `done`
+- `ping`: 服务端 keepalive 注释行（`:` 开头），客户端无需处理，代理也不会缓冲
+
+**错误处理**：
+
+| 错误类型 | 错误消息 | 说明 |
+|---------|---------|------|
+| AI 生成失败 | API 返回的原始错误信息或"生成失败，请稍后重试。" | 如 API 调用失败、无效 session 等 |
+| 系统内部错误 | "系统内部错误，请稍后重试。" | 如数据库落盘失败、未分类异常 |
+
+错误发生时，错误消息会**优先落盘到该条 assistant 消息**，再通过 SSE 通知前端，确保数据不丢失。
+
+```
+data: {"type": "error", "message": "生成失败，请稍后重试。"}
+data: {"type": "done", "sid": 1, "mid": 123}
+```
 
 **恢复模式**（检测到 Redis 有进行中的流）:
 
 ```
 data: {"type": "start", "sid": 1, "mid": 123, "resume": true}
 
-data: {"type": "content", "content": "...接上次未完成部分继续输出..."}
-data: {"type": "content", "content": "...持续增量输出..."}
+data: {"type": "catchup", "content": "已完成的全部内容拼接..."}
+data: {"type": "content", "content": "...继续输出新内容..."}
 
 data: {"type": "done", "sid": 1, "mid": 123}
 ```
 
-说明：恢复模式仍保持 stream 语义，服务端会尽量跳过已缓存前缀，仅继续推送剩余内容。
+说明：恢复模式先发一次 `catchup` 事件将全量缓存内容一次性推送给前端（用于快速同步），随后继续追尾新产生的 chunk。Producer 意外中断时，会自动重启并继续。若消费者超过 120 秒无任何事件则判定超时，发送 error 事件后结束流。
 
 ---
 

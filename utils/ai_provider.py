@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 
 import dashscope
-from dashscope import Application
+from dashscope import Application, Generation
 
 
 class InvalidAISessionError(Exception):
@@ -54,8 +54,8 @@ class AIProvider(ABC):
 
 
 # noinspection DuplicatedCode
-class DashScopeProvider(AIProvider):
-    """阿里云 DashScope AI Provider"""
+class DashScopeApplicationProvider(AIProvider):
+    """阿里云 DashScope Application API（智能体调用）"""
 
     def __init__(self, api_key: str, app_id: str):
         self.api_key = api_key
@@ -127,6 +127,56 @@ class DashScopeProvider(AIProvider):
         return self._last_session_id
 
 
+class DashScopeGenerationProvider(AIProvider):
+    """阿里云 DashScope Generation API（模型调用）"""
+
+    def __init__(self, api_key: str, model: str):
+        self.api_key = api_key
+        self.model = model
+        dashscope.api_key = api_key
+
+    def chat_stream(self, messages: list, session_id: str | None = None):
+        responses = Generation.call(
+            api_key=self.api_key,
+            model=self.model,
+            messages=messages,
+            result_format='message',
+            stream=True,
+            incremental_output=True,
+            enable_search=False,
+            enable_thinking=False
+        )
+        for response in responses:
+            if response.status_code != HTTPStatus.OK:
+                raise Exception(f'API error: code={response.status_code}, message={response.message}')
+            if response.output and response.output.choices:
+                for choice in response.output.choices:
+                    if choice.message and choice.message.content:
+                        yield choice.message.content
+
+    def chat_non_stream(self, messages: list) -> str:
+        """非流式调用，直接返回完整响应内容"""
+        response = Generation.call(
+            api_key=self.api_key,
+            model=self.model,
+            messages=messages,
+            result_format='message',
+            enable_search=False,
+            enable_thinking=False
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise Exception(f'API error: code={response.status_code}, message={response.message}')
+        if response.output and response.output.choices:
+            return response.output.choices[0].message.content
+        return ''
+
+    def chat_stream_resume(self, messages: list, completed_content: str = '', session_id: str | None = None):
+        yield from self.chat_stream(messages, session_id=None)
+
+    def get_last_session_id(self) -> str | None:
+        return None
+
+
 class YuanqiProvider(AIProvider):
     """元器平台 AI Provider（占位实现）"""
 
@@ -144,22 +194,26 @@ class YuanqiProvider(AIProvider):
         return None
 
 
-def get_ai_provider(provider_name: str, api_key: str, app_id: str = None) -> AIProvider:
+def get_ai_provider(provider_name: str, api_key: str, app_id: str = None, model: str = None) -> AIProvider:
     """
     工厂函数，获取 AI Provider 实例
 
     Args:
         provider_name: provider 名称 (dashscope / yuanqi)
         api_key: API 密钥
-        app_id: APP ID（DashScope 需要）
+        app_id: APP ID（DashScope Application API 需要）
+        model: 模型名称（DashScope Generation API 需要）
 
     Returns:
         AIProvider 实例
     """
     if provider_name == 'dashscope':
-        if not app_id:
-            raise ValueError('DashScope provider requires app_id')
-        return DashScopeProvider(api_key, app_id)
+        if app_id:
+            return DashScopeApplicationProvider(api_key, app_id)
+        elif model:
+            return DashScopeGenerationProvider(api_key, model)
+        else:
+            raise ValueError('DashScope provider requires app_id or model')
     elif provider_name == 'yuanqi':
         if not app_id:
             raise ValueError('Yuanqi provider requires app_id')

@@ -9,6 +9,7 @@
 | email         | VARCHAR(120) | UNIQUE, NOT NULL            | 邮箱            |
 | password_hash | VARCHAR(60)  | NOT NULL                    | 密码（bcrypt 加密） |
 | created_at    | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 创建时间          |
+| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP  | 更新时间          |
 
 ## UserInfo 表 (user_info)
 
@@ -20,6 +21,7 @@
 | age        | INT         | NULLABLE                            | 年龄        |
 | basic_info | TEXT        | NULLABLE                            | 基本信息      |
 | bio        | TEXT        | NULLABLE                            | 简介        |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间      |
 
 ## File 表 (files)
 
@@ -30,6 +32,7 @@
 | original_filename | VARCHAR(255) | NOT NULL                         | 原始文件名     |
 | secure_filename   | VARCHAR(255) | UNIQUE, NOT NULL                 | 安全文件名（唯一） |
 | created_at        | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 上传时间      |
+| updated_at        | DATETIME     | ON UPDATE CURRENT_TIMESTAMP      | 更新时间      |
 
 ## 表关系
 
@@ -43,7 +46,7 @@
 |------------|--------------|----------------------------------|--------------|
 | sid        | INT          | PRIMARY KEY, AUTO_INCREMENT      | 会话唯一标识       |
 | uid        | INT          | FOREIGN KEY(users.uid), NOT NULL | 关联 User 表    |
-| title      | VARCHAR(255) | NOT NULL                         | 会话标题（暂时用时间戳） |
+| title      | VARCHAR(255) | NOT NULL                         | 会话标题（AI 自动生成，或用户手动编辑） |
 | created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 创建时间         |
 | updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP      | 更新时间         |
 
@@ -56,6 +59,7 @@
 | role       | VARCHAR(20) | NOT NULL                                         | user / assistant |
 | content    | TEXT        | NOT NULL                                         | 消息内容             |
 | created_at | DATETIME    | DEFAULT CURRENT_TIMESTAMP                        | 创建时间             |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP                      | 更新时间             |
 
 ## Route 表 (routes)
 

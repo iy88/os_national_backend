@@ -19,6 +19,7 @@ from utils.redis_client import (
     init_stream_runtime,
     append_stream_event,
     read_stream_events,
+    get_stream_last_event_id,
     set_stream_state,
     get_stream_state,
     acquire_stream_producer_lock,
@@ -71,6 +72,15 @@ def _remove_empty_assistant_message(sid: int, mid: int):
         print(f"Failed to remove empty assistant message sid={sid}, mid={mid}: {cleanup_err}")
 
 
+def _is_first_assistant_message(sid: int, mid: int) -> bool:
+    """判断当前 mid 是否是该会话的第一个 assistant message"""
+    earliest = db.session.query(db.func.min(Message.mid)).filter(
+        Message.sid == sid,
+        Message.role == 'assistant'
+    ).scalar()
+    return earliest == mid
+
+
 def _persist_assistant_message(sid: int, mid: int, current_user_id: int, full_content: str):
     msg = Message.query.filter_by(mid=mid, sid=sid).first()
     if not msg:
@@ -83,6 +93,32 @@ def _persist_assistant_message(sid: int, mid: int, current_user_id: int, full_co
     session_row.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     db.session.commit()
+
+
+def _build_error_content(err: Exception, generation_error: bool) -> str:
+    """构建给用户展示并落盘的错误消息。"""
+    raw = str(err).strip()
+    if generation_error:
+        return raw or '生成失败，请稍后重试。'
+    return '系统内部错误，请稍后重试。'
+
+
+def _finalize_error_result(sid: int, mid: int, current_user_id: int, err: Exception, generation_error: bool):
+    """错误收敛：落盘错误消息，并通过事件流通知前端 error。"""
+    error_content = _build_error_content(err, generation_error)
+
+    # 先回滚当前失败事务，再尝试把错误消息写入占位消息
+    db.session.rollback()
+    try:
+        _persist_assistant_message(sid, mid, current_user_id, error_content)
+    except Exception as persist_err:
+        db.session.rollback()
+        print(f"Persist error content failed sid={sid}, mid={mid}: {persist_err}")
+        # 保底：若连错误消息都无法落盘，清理空占位，避免残留空记录
+        _remove_empty_assistant_message(sid, mid)
+
+    append_stream_event(mid, 'error', message=error_content)
+    set_stream_state(mid, 'error', message=error_content)
 
 
 def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_messages: list, ai_session_id: str | None):
@@ -104,6 +140,7 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
                 refresh_stream_producer_lock(sid)
 
         try:
+            # 1) 先做文本生成。若生成失败，错误消息落盘并结束。
             try:
                 produce(base_messages, ai_session_id)
             except InvalidAISessionError as invalid_session_err:
@@ -111,22 +148,61 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
                 clear_ai_session_id(sid)
                 fallback_messages = build_messages(sid, exclude_mid=mid)
                 produce(fallback_messages, None)
+            except Exception as gen_err:
+                print(f"AI generation error sid={sid}, mid={mid}: {gen_err}")
+                _finalize_error_result(sid, mid, current_user_id, gen_err, generation_error=True)
+                return
 
+            # 2) 生成成功后落盘，失败则按内部错误处理。
             full_content = get_stream_content(mid)
-            _persist_assistant_message(sid, mid, current_user_id, full_content)
+            try:
+                _persist_assistant_message(sid, mid, current_user_id, full_content)
+            except Exception as persist_err:
+                print(f"Persist assistant content failed sid={sid}, mid={mid}: {persist_err}")
+                _finalize_error_result(sid, mid, current_user_id, persist_err, generation_error=False)
+                return
 
             new_ai_session_id = ai_provider.get_last_session_id()
             if new_ai_session_id:
                 set_ai_session_id(sid, new_ai_session_id)
 
-            append_stream_event(mid, 'done', sid=sid)
+            # ========== 自动生成标题（仅第一轮）==========
+            generated_title = None
+            if _is_first_assistant_message(sid, mid):
+                try:
+                    title_prompt = (
+                        "根据以下对话，生成一个**10～18字**的标题，**只返回标题**，无任何其他文字。"
+                        "标题要精准概括核心问题，使用陈述短语，不使用问句、标点、序号、表情。\n\n"
+                        f"用户：{full_content.split('助手：')[0].replace('用户：', '').strip()}\n"
+                        f"助手：{full_content.strip()}"
+                    )
+                    title_gen_messages = [{"role": "user", "content": title_prompt}]
+                    title_provider = get_ai_provider(
+                        Config.AI_PROVIDER,
+                        Config.AI_API_KEY,
+                        model=Config.AI_TITLE_MODEL
+                    )
+                    generated_title = title_provider.chat_non_stream(title_gen_messages).strip()
+                    if generated_title and 10 <= len(generated_title) <= 18:
+                        session_row = ConversationSession.query.filter_by(sid=sid).first()
+                        if session_row:
+                            session_row.title = generated_title
+                            db.session.commit()
+                        # print(f"Generated title for sid={sid}: {generated_title}")
+                except Exception as title_err:
+                    # 标题失败不影响主流程，不回滚已成功落盘的回答
+                    print(f"Title generation failed sid={sid}: {title_err}")
+            # ========== end 标题生成 ==========
+
+            done_payload = {'sid': sid}
+            if generated_title:
+                done_payload['title'] = generated_title
+            append_stream_event(mid, 'done', **done_payload)
             set_stream_state(mid, 'done')
         except Exception as e:
-            print(f"AI streaming error sid={sid}, mid={mid}: {e}")
-            db.session.rollback()
-            _remove_empty_assistant_message(sid, mid)
-            append_stream_event(mid, 'error', message=str(e))
-            set_stream_state(mid, 'error', message=str(e))
+            # 兜底：未分类异常按内部错误处理
+            print(f"AI streaming internal error sid={sid}, mid={mid}: {e}")
+            _finalize_error_result(sid, mid, current_user_id, e, generation_error=False)
         finally:
             clear_stream_marker(sid)
             release_stream_producer_lock(sid)
@@ -161,6 +237,16 @@ def _consume_stream_events(sid: int, mid: int, resume: bool = False):
         last_id = '0-0'
         idle_rounds = 0
 
+        # 恢复模式：先发一次缓存快照，再从当前事件流末尾开始追实时事件。
+        if resume:
+            cached_content = get_stream_content(mid)
+            if cached_content:
+                yield f"data: {json.dumps({'type': 'catchup', 'content': cached_content})}\n\n"
+
+            stream_last_id = get_stream_last_event_id(mid)
+            if stream_last_id:
+                last_id = stream_last_id
+
         while True:
             try:
                 events = read_stream_events(mid, last_id=last_id, block_ms=5000, count=200)
@@ -178,11 +264,15 @@ def _consume_stream_events(sid: int, mid: int, resume: bool = False):
                         yield f"data: {json.dumps({'type': 'content', 'content': fields.get('content', '')})}\n\n"
                     elif event_type == 'done':
                         should_cleanup_runtime = True
-                        yield f"data: {json.dumps({'type': 'done', 'sid': sid, 'mid': mid})}\n\n"
+                        done_payload = {'type': 'done', 'sid': sid, 'mid': mid}
+                        if fields.get('title'):
+                            done_payload['title'] = fields.get('title')
+                        yield f"data: {json.dumps(done_payload)}\n\n"
                         return
                     elif event_type == 'error':
                         should_cleanup_runtime = True
                         yield f"data: {json.dumps({'type': 'error', 'message': fields.get('message', 'Unknown error')})}\n\n"
+                        yield f"data: {json.dumps({'type': 'done', 'sid': sid, 'mid': mid})}\n\n"
                         return
                 continue
 
@@ -196,6 +286,7 @@ def _consume_stream_events(sid: int, mid: int, resume: bool = False):
             if stream_state == 'error':
                 should_cleanup_runtime = True
                 yield f"data: {json.dumps({'type': 'error', 'message': state.get('message', 'Unknown error')})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'sid': sid, 'mid': mid})}\n\n"
                 return
 
             if idle_rounds >= 24:
@@ -310,12 +401,14 @@ def send_message(current_user_id):
     发送消息，自动创建会话，SSE 流式响应
 
     请求体:
-        content: str - 消息内容
-        sid: int (可选) - 会话 ID，不传则创建新会话
+        content: str - 消息内容（重生成模式可不传）
+        sid: int - 会话 ID
+        regenerateMid: int (可选) - 重生成的 assistant 消息 ID，传了此参数则进入重生成模式
     """
     data = request.get_json() or {}
     content = (data.get('content') or '').strip()
     sid = data.get('sid')
+    regenerate_mid = data.get('regenerateMid')
 
     # 验证会话
     session = None
@@ -326,6 +419,37 @@ def send_message(current_user_id):
             return jsonify({'success': False, 'message': 'Session not found'}), 404
         existing_session = True
 
+    # ========== 重生成模式 ==========
+    if regenerate_mid is not None:
+        # 1. 验证 regenerateMid
+        old_msg = Message.query.filter_by(mid=regenerate_mid, sid=sid, role='assistant').first()
+        if not old_msg:
+            return jsonify({'success': False, 'message': 'Message not found or not assistant'}), 404
+
+        # 2. 删除旧的 assistant 消息
+        db.session.delete(old_msg)
+        db.session.flush()
+
+        # 3. 创建新的 assistant 占位
+        assistant_msg = Message(sid=sid, role='assistant', content='')
+        session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.session.add(assistant_msg)
+        db.session.flush()
+        assistant_mid = assistant_msg.mid
+        db.session.commit()
+
+        # 4. 从数据库构建完整消息列表（排除新 assistant 占位），强制不使用 session_id
+        messages = build_messages(sid, exclude_mid=assistant_mid)
+
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        app_obj = current_app._get_current_object()
+        set_stream_mid(sid, assistant_mid)
+        init_stream_runtime(assistant_mid)
+        _ensure_stream_producer(app_obj, sid, assistant_mid, current_user_id, messages, ai_session_id=None)
+
+        return sse_response(lambda: _consume_stream_events(sid, assistant_mid, resume=False))
+
+    # ========== 正常发送模式 ==========
     # noinspection PyUnresolvedReferences,PyProtectedMember
     app_obj = current_app._get_current_object()
 

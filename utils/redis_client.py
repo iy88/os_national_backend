@@ -123,6 +123,15 @@ def read_stream_events(mid: int, last_id: str = '0-0', block_ms: int = 15000, co
     return data[0][1]
 
 
+def get_stream_last_event_id(mid: int) -> str | None:
+    """获取 Redis Stream 最后一条事件 ID。"""
+    key = f'stream_events:{mid}'
+    data = redis_client.xrevrange(key, count=1)
+    if not data:
+        return None
+    return data[0][0]
+
+
 def set_stream_state(mid: int, state: str, message: str | None = None):
     """设置流式状态（running/done/error）。"""
     key = f'stream_state:{mid}'
