@@ -2,6 +2,8 @@ import random
 import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
+from email.header import Header
+from email.utils import formataddr
 from email.mime.text import MIMEText
 
 from flask import current_app
@@ -22,8 +24,8 @@ def send_verification_email(email: str, code: str):
     set_verification_code(email, code)
 
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = '您的 OS National 注册验证码'
-    msg['From'] = current_app.config['SMTP_SENDER']
+    msg['Subject'] = '【城竞共生】 您的注册验证码'
+    msg['From'] = formataddr((Header("城竞共生", 'utf-8').encode(),current_app.config['SMTP_SENDER']))
     msg['To'] = email
 
     html_content = f'''
