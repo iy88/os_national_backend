@@ -37,6 +37,7 @@ class Config:
     SMTP_USERNAME = os.getenv('SMTP_USERNAME')
     SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
     SMTP_SENDER = os.getenv('SMTP_SENDER')
+    SMTP_SENDER_NAME = os.getenv('SMTP_SENDER_NAME', '城竞共生')
 
     # JWT
     JWT_SECRET = os.getenv('JWT_SECRET')

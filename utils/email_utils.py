@@ -25,7 +25,9 @@ def send_verification_email(email: str, code: str):
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = '【城竞共生】 您的注册验证码'
-    msg['From'] = formataddr((Header("城竞共生", 'utf-8').encode(),current_app.config['SMTP_SENDER']))
+    sender = current_app.config['SMTP_SENDER']
+    sender_name = current_app.config.get('SMTP_SENDER_NAME', '城竞共生')
+    msg['From'] = formataddr((Header(sender_name, 'utf-8').encode(), sender))
     msg['To'] = email
 
     html_content = f'''
