@@ -9,7 +9,7 @@ OS National 后端 API 服务，为用户提供 AI 对话（旅行规划、角�
 - **ORM**: SQLAlchemy（Flask-SQLAlchemy）
 - **数据库**: MySQL（PyMySQL 驱动）
 - **缓存**: Redis（邮箱验证码、流式消息上下文）
-- **AI**: 阿里云 DashScope（Application API / Generation API）
+- **AI**: 腾讯云 ADP / DashScope（Application API / Generation API）
 - **认证**: JWT（bcrypt 密码）
 - **邮件**: SMTP
 
@@ -59,7 +59,7 @@ os_national_backend/
                                       ↕
                                  Redis (Streams / 缓存 / 锁)
                                       ↕
-                            AI Provider (DashScope API)
+                          AI Provider (Tencent ADP / DashScope)
 ```
 
 ## SSE 流式架构（Producer-Consumer 模式）
@@ -91,13 +91,27 @@ Agent 和 Roleplay 均采用 SSE（Server-Sent Events）流式响应，核心是
 get_ai_provider(provider_name, api_key, app_id=None, model=None)
 ```
 
-| Provider | 触发条件 | API | session_id | 用途 |
-|----------|---------|-----|------------|------|
-| `DashScopeApplicationProvider` | 传 `app_id` | `Application.call()` | 是，自动缓存 | Agent 对话、Roleplay 角色对话 |
-| `DashScopeGenerationProvider` | 传 `model` | `Generation.call()` | 无 | AI 自动生成标题（首轮对话结束） |
-| `YuanqiProvider` | — | — | — | 占位，未实现 |
+| Provider | 触发条件 | API | 上下文恢复 | 用途 |
+|----------|---------|-----|-----------|------|
+| `DashScopeApplicationProvider` | `provider=dashscope` + `app_id` | `Application.call()` | session_id（180天） | Agent 对话、Roleplay 角色对话 |
+| `DashScopeGenerationProvider` | `provider=dashscope` + `model` | `Generation.call()` | 无 | AI 自动生成标题（首轮对话结束） |
+| `TencentADPProvider` | `provider=tencent_adp` + `app_id` | SSE WSS API | MD5(sid) 确定性 conversationId | Agent 对话、Roleplay 角色对话 |
+| `TencentADPGenerationProvider` | `provider=tencent_adp` + `model` | OpenAI SDK MaaS | 无 | AI 自动生成标题 |
+
+**`chat_stream` 接口**（统一签名）：
+```python
+chat_stream(messages: list, sid: int, resume: bool = False, session_id: str | None = None)
+```
+- `sid`：强制传入会话 ID，用于生成确定性上下文标识
+- `resume`：是否从当前 active session 恢复
+- `session_id`：AI 提供商 session_id（可选）
 
 **`InvalidAISessionError`**：DashScope 返回 400/401/404/422 且 message 含 session 关键词时抛出，触发调用方清除缓存 session_id 并用全量历史重试。
+
+**Tencent ADP 特性**：
+- 使用 SSE 流式协议，只处理 `text.delta` 事件
+- 自动过滤 `thought` 类型消息（思考过程），只输出 `reply` 内容
+- 新会话时支持 system prompt 注入（roleplay 场景）
 
 ## JWT 认证体系
 
@@ -503,7 +517,7 @@ JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）
 | `stream_events:{mid}` | Stream (XADD) | content/done/error 事件 | 3600s |
 | `stream_state:{mid}` | Hash | running/done/error + message | 3600s |
 | `stream_producer:{sid}` | String (SET NX EX) | 生产者分布式锁 | 3600s |
-| `ai_session:{sid}` | String | DashScope session_id | 3600s |
+| `ai_session:{sid}` | String | AI session_id/conversation_id | 3600s |
 
 ## Roleplay 语境（rp_stream:{uid}:{rid}:*）
 
@@ -514,7 +528,7 @@ JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）
 | `rp_stream_events:{mid}` | Stream (XADD) | 事件流 | 3600s |
 | `rp_stream_state:{mid}` | Hash | running/done/error | 3600s |
 | `rp_stream:{uid}:{rid}:producer` | String | 生产者锁 | 3600s |
-| `rp_stream:{uid}:{rid}:ai_session` | String | AI session_id | 3600s |
+| `rp_stream:{uid}:{rid}:ai_session` | String | AI session_id/conversation_id | 3600s |
 
 ## 邮箱验证码
 
@@ -553,9 +567,11 @@ bcrypt 加密/验证（`generate_password_hash` / `check_password_hash`）。
 ## ai_provider.py
 
 - `get_ai_provider(provider_name, api_key, app_id=None, model=None)`：工厂函数
-- `AIProvider`：抽象基类，定义 `chat_stream` / `chat_stream_resume` / `get_last_session_id`
+- `AIProvider`：抽象基类，定义 `chat_stream(messages, sid, resume, session_id)` / `chat_stream_resume` / `get_last_session_id`
 - `DashScopeApplicationProvider`：Application API，`chat_stream` 支持 session_id 传递和 `InvalidAISessionError`
 - `DashScopeGenerationProvider`：Generation API，`chat_non_stream()` 用于标题生成
+- `TencentADPProvider`：ADP Agent API，SSE 流式，自动过滤 thought 消息，支持 system prompt
+- `TencentADPGenerationProvider`：腾讯云 MaaS API（OpenAI SDK 兼容），`chat_non_stream()` 用于标题生成
 - `InvalidAISessionError`：session 无效时抛出，触发调用方回退
 
 ---
