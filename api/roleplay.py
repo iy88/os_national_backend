@@ -152,20 +152,21 @@ def _run_stream_producer(
         set_rp_stream_state(mid, 'running')
         refresh_rp_stream_producer_lock(uid, rid)
 
-        def produce(active_messages: list, active_session_id: str | None):
-            for chunk in ai_provider.chat_stream(active_messages, session_id=active_session_id):
+        def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
+            for chunk in ai_provider.chat_stream(active_messages, sid=mid, resume=is_resume, session_id=active_session_id):
                 append_rp_stream_content(mid, chunk)
                 append_rp_stream_event(mid, 'content', content=chunk)
                 refresh_rp_stream_producer_lock(uid, rid)
 
         try:
             try:
-                produce(base_messages, ai_session_id)
+                is_resume = ai_session_id is not None
+                produce(base_messages, ai_session_id, is_resume)
             except InvalidAISessionError as invalid_session_err:
                 print(f"Invalid roleplay AI session_id detected uid={uid}, rid={rid}: {invalid_session_err}")
                 clear_rp_ai_session_id(uid, rid)
                 recover_messages = fallback_messages if fallback_messages is not None else base_messages
-                produce(recover_messages, None)
+                produce(recover_messages, None, False)
             except Exception as gen_err:
                 if ai_session_id and fallback_messages is not None:
                     print(
@@ -174,7 +175,7 @@ def _run_stream_producer(
                     )
                     clear_rp_ai_session_id(uid, rid)
                     try:
-                        produce(fallback_messages, None)
+                        produce(fallback_messages, None, False)
                     except Exception as fallback_err:
                         print(
                             f"Roleplay AI fallback generation error uid={uid}, rid={rid}, "

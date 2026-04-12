@@ -133,8 +133,8 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
         set_stream_state(mid, 'running')
         refresh_stream_producer_lock(sid)
 
-        def produce(active_messages: list, active_session_id: str | None):
-            for chunk in ai_provider.chat_stream(active_messages, session_id=active_session_id):
+        def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
+            for chunk in ai_provider.chat_stream(active_messages, sid=sid, resume=is_resume, session_id=active_session_id):
                 append_stream_content(mid, chunk)
                 append_stream_event(mid, 'content', content=chunk)
                 refresh_stream_producer_lock(sid)
@@ -142,12 +142,13 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
         try:
             # 1) 先做文本生成。若生成失败，错误消息落盘并结束。
             try:
-                produce(base_messages, ai_session_id)
+                is_resume = ai_session_id is not None
+                produce(base_messages, ai_session_id, is_resume)
             except InvalidAISessionError as invalid_session_err:
                 print(f"Invalid AI session_id detected sid={sid}: {invalid_session_err}")
                 clear_ai_session_id(sid)
                 fallback_messages = build_messages(sid, exclude_mid=mid)
-                produce(fallback_messages, None)
+                produce(fallback_messages, None, False)
             except Exception as gen_err:
                 print(f"AI generation error sid={sid}, mid={mid}: {gen_err}")
                 _finalize_error_result(sid, mid, current_user_id, gen_err, generation_error=True)
