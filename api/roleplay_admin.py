@@ -4,7 +4,7 @@ import os
 from flask import Blueprint, request, jsonify
 
 from config import Config
-from models import db, File, RoleplayCharacter, RoleplayCharacterDetail
+from models import db, File, RoleplayCharacter, RoleplayCharacterDetail, RoleplaySession
 from utils.file_utils import (
     allowed_avatar_file,
     save_avatar_file,
@@ -286,3 +286,31 @@ def update_character(_, rid):
             'images_token': [generate_file_token(fid) for fid in images_id_list]
         }
     })
+
+
+@roleplay_admin_bp.route('/<int:rid>/delete', methods=['DELETE'])
+@token_required(require_admin=True)
+def delete_character(_, rid):
+    """删除角色（需无关联会话），同时删除关联图片文件"""
+    character = RoleplayCharacter.query.get(rid)
+    if not character:
+        return jsonify({'success': False, 'message': 'Character not found'}), 404
+
+    # 检查是否有会话关联
+    session_count = RoleplaySession.query.filter_by(rid=rid).count()
+    if session_count > 0:
+        return jsonify({'success': False, 'message': 'Cannot delete character with active sessions'}), 409
+
+    # 清理图片文件（avatar + images）
+    detail = character.detail
+    if detail:
+        if detail.avatar_id:
+            _delete_file(detail.avatar_id)
+        if detail.images_id:
+            for fid in _parse_images_id(detail.images_id):
+                _delete_file(fid)
+
+    db.session.delete(character)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Character deleted'}), 200

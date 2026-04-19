@@ -38,6 +38,7 @@
   - [24. 创建角色](#24-创建角色)
   - [25. 获取角色详情](#25-获取角色详情)
   - [26. 更新角色](#26-更新角色)
+  - [27. 删除角色](#27-删除角色)
 - [工具接口](#工具接口)
   - [健康检查](#健康检查)
 
@@ -1522,5 +1523,55 @@ Authorization: Bearer <token>
 
 ---
 
+### 27. 删除角色
+
+- **URL**: `DELETE /admin/roleplay/<int:rid>/delete`
+- **描述**: 删除角色（需无关联会话），同时删除关联的头像和图片文件
+- **认证**: 需要 Bearer Token（admin role）
+
+**请求**:
+
+```
+DELETE /admin/roleplay/1/delete
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "message": "Character deleted"
+}
+```
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Character not found"
+}
+```
+
+**响应 (失败 - 409)**:
+
+```json
+{
+  "success": false,
+  "message": "Cannot delete character with active sessions"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
 
 ## 工具接口
