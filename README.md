@@ -24,6 +24,7 @@ os_national_backend/
 ├── models/
 │   ├── __init__.py            # db 实例 + 所有模型导出
 │   ├── user.py                # User, UserInfo, File
+│   ├── admin.py               # Admin, AdminInfo
 │   ├── conversation.py        # ConversationSession, Message
 │   ├── route.py               # Route
 │   └── roleplay.py            # RoleplayCharacter, RoleplayCharacterDetail,
@@ -31,18 +32,22 @@ os_national_backend/
 ├── api/
 │   ├── __init__.py            # 导出所有 Blueprint
 │   ├── user.py                # /user/* — 注册/登录/个人信息
+│   ├── admin.py               # /admin/* — 管理员登录/个人信息
 │   ├── email.py               # /email/* — 邮箱验证码
-│   ├── file.py                # /file/* — 头像上传/获取
+│   ├── file.py                # /file/* — 头像/图片上传/获取
 │   ├── agent.py               # /agent/travel-route-plan/* — AI 旅行规划对话
 │   ├── route.py               # /route/* — 路线收藏
-│   └── roleplay.py            # /agent/roleplay/* — 角色扮演对话
+│   ├── roleplay.py            # /agent/roleplay/* — 角色扮演对话
+│   └── roleplay_admin.py      # /admin/roleplay/* — 角色管理
 ├── utils/
-│   ├── jwt_utils.py           # JWT 生成/验证/装饰器
+│   ├── jwt_utils.py           # JWT 生成/验证/装饰器（支持 role 区分）
 │   ├── password_utils.py       # bcrypt 加密/验证
 │   ├── email_utils.py         # 邮箱验证/SMTP 发送
-│   ├── file_utils.py          # 头像文件处理/token
-│   ├── ai_provider.py         # AI Provider 工厂（DashScope）
+│   ├── file_utils.py          # 文件处理/token（generate_file_token）
+│   ├── ai_provider.py         # AI Provider 工厂（腾讯 ADP / DashScope）
 │   └── redis_client.py        # Redis 所有 key 函数
+├── scripts/
+│   └── find_orphan_images.py  # 检查孤立图片脚本
 └── docs/
     ├── api.md                 # API 文档
     └── db.md                  # 数据库文档
@@ -176,6 +181,41 @@ chat_stream(messages: list, sid: int, resume: bool = False, session_id: str | No
 
 ---
 
+## 管理员模块（models/admin.py）
+
+### Admin
+
+管理员账户表（结构与 User 完全对称）。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| aid | INT (PK) | 管理员唯一标识 |
+| username | VARCHAR(80) UNIQUE | 管理员用户名 |
+| email | VARCHAR(120) UNIQUE | 管理员邮箱 |
+| password_hash | VARCHAR(256) | bcrypt 加密密码 |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+**设计要点**：JWT payload 包含 `role='admin'`，通过 `token_required(require_admin=True)` 区分管理员接口。
+
+---
+
+### AdminInfo
+
+管理员扩展信息，一对一关联 Admin（`aid` 主键 + FK）。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| aid | INT (PK, FK) | 关联 Admin |
+| avatar_id | INT (FK→files.fid) | 头像，ON DELETE SET NULL |
+| gender | VARCHAR(10) | 性别 |
+| age | INT | 年龄 |
+| basic_info | TEXT | 基本信息 |
+| bio | TEXT | 简介 |
+| updated_at | DATETIME | 更新时间 |
+
+---
+
 ### File
 
 纯文件存储表，**无 uid 字段**（不与 User 直接绑定）。供用户头像、角色头像等复用。
@@ -188,7 +228,7 @@ chat_stream(messages: list, sid: int, resume: bool = False, session_id: str | No
 | created_at | DATETIME | 上传时间 |
 | updated_at | DATETIME | 更新时间 |
 
-**设计要点**：`secure_filename` 全局唯一，通过 `uuid.uuid4().hex` 生成，保证文件命名安全。文件所有者通过 `UserInfo.avatar_id` / `RoleplayCharacter.avatar_id` 间接关联。
+**设计要点**：`secure_filename` 全局唯一，通过 `uuid.uuid4().hex` 生成，保证文件命名安全。文件通过 `UserInfo.avatar_id` / `AdminInfo.avatar_id` / `RoleplayCharacterDetail.avatar_id` / `RoleplayCharacterDetail.images_id` 间接关联。
 
 ---
 
@@ -253,9 +293,8 @@ AI 对话会话。
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | rid | INT (PK) | 角色唯一标识 |
-| type | VARCHAR(20) | 类型：`game_expert`（电竞达人）/ `esports_player`（电竞选手）/ `game_hero`（游戏英雄） |
+| type | VARCHAR(20) | 类型：`game_expert`（电竞明星）/ `esports_player`（电竞选手）/ `game_hero`（游戏英雄） |
 | name | VARCHAR(80) | 角色显示名 |
-| avatar_id | INT (FK→files.fid) | 头像，ON DELETE SET NULL |
 | created_at | DATETIME | 创建时间 |
 | updated_at | DATETIME | 更新时间 |
 
@@ -263,7 +302,7 @@ AI 对话会话。
 
 | type | 说明 | 场景示例 |
 |------|------|---------|
-| game_expert | 电竞达人 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| game_expert | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧 |
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
 | game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
 
@@ -278,7 +317,8 @@ AI 对话会话。
 | rid | INT (PK, FK) | 关联 RoleplayCharacter |
 | bio | TEXT | 角色简介 |
 | phrases | TEXT | 名人名言/短语（JSON 数组，如 `["适度娱乐","沉迷伤身"]`） |
-| avatar_id | INT (FK→files.fid) | 详情头像（可独立于 Character 设置），ON DELETE SET NULL |
+| avatar_id | INT (FK→files.fid) | 头像，ON DELETE SET NULL |
+| images_id | TEXT | 图片 ID 数组（JSON 数组，如 `[1,2,3]`） |
 | updated_at | DATETIME | 更新时间 |
 
 ---
