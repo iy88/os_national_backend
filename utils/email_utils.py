@@ -58,5 +58,10 @@ def send_verification_email(email: str, code: str):
                              current_app.config['SMTP_PASSWORD'])
                 server.sendmail(current_app.config['SMTP_SENDER'],
                                 [email], msg.as_string())
+    except smtplib.SMTPResponseException as e:
+        # SMTP专用异常，携带服务器响应码和响应文本
+        raise RuntimeError(f'Email send failed: {e.smtp_code} {e.smtp_error.decode("utf-8") if e.smtp_error else str(e)}')
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f'Email send failed: SMTP error {e}')
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        raise RuntimeError(f'Email send failed: {e}')

@@ -19,7 +19,10 @@ def send_verification():
         return jsonify({'success': False, 'message': 'Invalid email format'}), 400
 
     code = generate_verification_code()
-    send_verification_email(email, code)
+    try:
+        send_verification_email(email, code)
+    except RuntimeError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
     return jsonify({
         'success': True,

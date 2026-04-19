@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify, Response, stream_with_context, current_app
@@ -30,6 +31,8 @@ from utils.redis_client import (
     set_ai_session_id,
     clear_ai_session_id,
 )
+
+SSE_CONNECT_TIMEOUT_SECONDS = 120
 
 agent_bp = Blueprint('agent', __name__, url_prefix='/agent/travel-route-plan')
 
@@ -227,8 +230,9 @@ def _ensure_stream_producer(app, sid: int, mid: int, current_user_id: int, messa
 
 
 def _consume_stream_events(sid: int, mid: int, resume: bool = False):
-    """SSE 消费者：回放已有事件并实时追尾新增事件。"""
+    """SSE 消费者：回放已有事件并实时追尾新增事件，带显式连接超时。"""
     should_cleanup_runtime = False
+    start_time = time.monotonic()
     start_data = {'type': 'start', 'sid': sid, 'mid': mid}
     if resume:
         start_data['resume'] = True
@@ -249,6 +253,12 @@ def _consume_stream_events(sid: int, mid: int, resume: bool = False):
                 last_id = stream_last_id
 
         while True:
+            elapsed = time.monotonic() - start_time
+            if elapsed > SSE_CONNECT_TIMEOUT_SECONDS:
+                should_cleanup_runtime = True
+                yield f"data: {json.dumps({'type': 'error', 'message': 'SSE connection timeout'})}\n\n"
+                return
+
             try:
                 events = read_stream_events(mid, last_id=last_id, block_ms=5000, count=200)
             except Exception as e:
@@ -427,9 +437,9 @@ def send_message(current_user_id):
         if not old_msg:
             return jsonify({'success': False, 'message': 'Message not found or not assistant'}), 404
 
-        # 2. 删除旧的 assistant 消息
+        # 2. 删除旧的 assistant 消息，立即 commit 避免后续异常导致删除失效
         db.session.delete(old_msg)
-        db.session.flush()
+        db.session.commit()
 
         # 3. 创建新的 assistant 占位
         assistant_msg = Message(sid=sid, role='assistant', content='')
