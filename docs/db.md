@@ -23,6 +23,29 @@
 | bio        | TEXT        | NULLABLE                            | 简介        |
 | updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间      |
 
+## Admin 表 (admins)
+
+| 字段            | 类型           | 约束                          | 说明            |
+|---------------|--------------|-----------------------------|---------------|
+| aid           | INT          | PRIMARY KEY, AUTO_INCREMENT | 管理员唯一标识      |
+| username      | VARCHAR(80)  | UNIQUE, NOT NULL            | 管理员用户名       |
+| email         | VARCHAR(120) | UNIQUE, NOT NULL            | 管理员邮箱        |
+| password_hash | VARCHAR(256) | NOT NULL                    | 密码（bcrypt 加密） |
+| created_at    | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 创建时间          |
+| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP  | 更新时间          |
+
+## AdminInfo 表 (admin_info)
+
+| 字段         | 类型          | 约束                                  | 说明        |
+|------------|-------------|-------------------------------------|-----------|
+| aid        | INT         | PRIMARY KEY, FOREIGN KEY(admins.aid) | 关联 Admin 表 |
+| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID   |
+| gender     | VARCHAR(10) | NULLABLE                            | 性别        |
+| age        | INT         | NULLABLE                            | 年龄        |
+| basic_info | TEXT        | NULLABLE                            | 基本信息      |
+| bio        | TEXT        | NULLABLE                            | 简介        |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间      |
+
 ## File 表 (files)
 
 | 字段                | 类型           | 约束                               | 说明        |
@@ -37,6 +60,8 @@
 
 - `UserInfo.uid` 外键关联 `User.uid` (ON DELETE CASCADE)，一对一关系，注册时自动创建
 - `UserInfo.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示用户头像
+- `AdminInfo.aid` 外键关联 `Admin.aid` (ON DELETE CASCADE)，一对一关系，管理员注册时自动创建
+- `AdminInfo.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示管理员头像
 - File 表不再与 User 绑定，改为纯文件存储（供用户头像、角色头像等使用）
 
 ## ConversationSession 表 (conversation_sessions)
@@ -85,9 +110,8 @@
 | 字段         | 类型           | 约束                                  | 说明                        |
 |------------|--------------|-------------------------------------|---------------------------|
 | rid        | INT          | PRIMARY KEY, AUTO_INCREMENT         | 角色唯一标识                    |
-| type       | VARCHAR(20)  | NOT NULL                            | 类型（game_expert=游戏达人 / esports_player=电竞选手 / game_hero=游戏英雄） |
+| type       | VARCHAR(20)  | NOT NULL                            | 类型（game_expert=电竞明星 / esports_player=电竞选手 / game_hero=游戏英雄） |
 | name       | VARCHAR(80)  | NOT NULL                            | 角色显示名                      |
-| avatar_id  | INT          | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID                    |
 | created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP           | 创建时间                      |
 | updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP         | 更新时间                      |
 
@@ -99,6 +123,7 @@
 | bio        | TEXT        | NULLABLE                            | 简介                        |
 | phrases    | TEXT        | NULLABLE                            | 名人名言/短语（JSON 数组）           |
 | avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE    | 头像文件 ID                    |
+| images_id  | TEXT        | NULLABLE                            | 图片文件 ID 数组（JSON 数组）         |
 | updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间                      |
 
 ## RoleplaySession 表 (roleplay_sessions)
@@ -126,8 +151,10 @@
 
 ## Roleplay 表关系
 
-- `RoleplayCharacter.uid` 无（角色表不关联用户）
+- `RoleplayCharacter` 不关联用户（角色表不关联 User）
 - `RoleplayCharacterDetail.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)，一对一关系
+- `RoleplayCharacterDetail.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示角色头像
+- `RoleplayCharacterDetail.images_id` 存储多个图片文件 ID（JSON 数组）
 - `RoleplaySession.uid` 外键关联 `User.uid` (ON DELETE CASCADE)
 - `RoleplaySession.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)
 - `RoleplayMessage.uid` 外键关联 `User.uid` (ON DELETE CASCADE)

@@ -10,7 +10,6 @@ class RoleplayCharacter(db.Model):
     rid = db.Column(db.Integer, primary_key=True, autoincrement=True)
     type = db.Column(db.String(20), nullable=False)  # game_expert / esports_player / game_hero
     name = db.Column(db.String(80), nullable=False)  # 角色显示名
-    avatar_id = db.Column(db.Integer, db.ForeignKey('files.fid', ondelete='SET NULL'), nullable=True)  # 头像
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
@@ -29,6 +28,7 @@ class RoleplayCharacterDetail(db.Model):
     bio = db.Column(db.Text, nullable=True)  # 简介
     phrases = db.Column(db.Text, nullable=True)  # 名人名言/短语，JSON 数组
     avatar_id = db.Column(db.Integer, db.ForeignKey('files.fid', ondelete='SET NULL'), nullable=True)  # 头像
+    images_id = db.Column(db.Text, nullable=True)  # 图片 ID 数组，JSON 数组
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 

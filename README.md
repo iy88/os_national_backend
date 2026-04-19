@@ -253,7 +253,7 @@ AI 对话会话。
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | rid | INT (PK) | 角色唯一标识 |
-| type | VARCHAR(20) | 类型：`game_expert`（游戏达人）/ `esports_player`（电竞选手）/ `game_hero`（游戏英雄） |
+| type | VARCHAR(20) | 类型：`game_expert`（电竞达人）/ `esports_player`（电竞选手）/ `game_hero`（游戏英雄） |
 | name | VARCHAR(80) | 角色显示名 |
 | avatar_id | INT (FK→files.fid) | 头像，ON DELETE SET NULL |
 | created_at | DATETIME | 创建时间 |
@@ -263,7 +263,7 @@ AI 对话会话。
 
 | type | 说明 | 场景示例 |
 |------|------|---------|
-| game_expert | 游戏达人 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| game_expert | 电竞达人 | 游戏攻略咨询、游戏推荐、玩法技巧 |
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
 | game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
 

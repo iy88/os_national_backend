@@ -61,3 +61,18 @@ def generate_avatar_token(user_id: int, fid: int) -> str:
 def decode_avatar_token(token: str) -> dict:
     """解码头像访问 JWT token"""
     return jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALGORITHM])
+
+
+def generate_file_token(fid: int) -> str:
+    """生成文件访问 JWT token（无需用户认证）"""
+    payload = {
+        'fid': fid,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=Config.JWT_EXPIRATION_HOURS),
+        'iat': datetime.now(timezone.utc)
+    }
+    return jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
+
+
+def decode_file_token(token: str) -> dict:
+    """解码文件访问 JWT token"""
+    return jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALGORITHM])

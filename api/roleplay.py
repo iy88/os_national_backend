@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context, cu
 from config import Config
 from models import db, RoleplayCharacter, RoleplayCharacterDetail, RoleplaySession, RoleplayMessage
 from utils.ai_provider import get_ai_provider, InvalidAISessionError
+from utils.file_utils import generate_file_token
 from utils.jwt_utils import token_required
 from utils.redis_client import (
     get_rp_stream_mid,
@@ -326,28 +327,59 @@ def _consume_stream_events(uid: int, rid: int, mid: int, resume: bool = False):
 
 @roleplay_bp.route('/list/<type>', methods=['GET'])
 @token_required
-def list_characters(current_user_id, type):
-    """列出指定 type 的角色列表（不含详情）"""
-    if type not in Config.ROLEPLAY_APP_ID_MAP:
+def list_characters(_, type):
+    """列出指定 type 的角色列表（不含详情），支持分页和字段搜索"""
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 10, type=int)
+    search = request.args.get('search', '').strip()
+
+    if page < 1 or page_size < 1:
+        return jsonify({'success': False, 'message': 'Invalid page or page_size'}), 400
+    if page_size > 50:
+        page_size = 50
+
+    query = RoleplayCharacter.query
+
+    if type == 'all':
+        pass
+    elif type in Config.ROLEPLAY_APP_ID_MAP:
+        query = query.filter_by(type=type)
+    else:
         return jsonify({'success': False, 'message': 'Invalid character type'}), 400
 
-    characters = RoleplayCharacter.query.filter_by(type=type).all()
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.join(RoleplayCharacterDetail, RoleplayCharacter.rid == RoleplayCharacterDetail.rid).filter(
+            db.or_(
+                RoleplayCharacter.name.ilike(search_pattern),
+                RoleplayCharacterDetail.bio.ilike(search_pattern)
+            )
+        )
+
+    total = query.count()
+    characters = query.order_by(RoleplayCharacter.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+
     result = [{
         'rid': c.rid,
+        'type': c.type,
         'name': c.name,
-        'avatarId': c.avatar_id,
+        'bio': c.detail.bio if c.detail and c.detail.bio else None,
+        'avatar_token': generate_file_token(c.detail.avatar_id) if c.detail and c.detail.avatar_id else None,
         'createdAt': c.created_at.isoformat() + 'Z' if c.created_at else None
     } for c in characters]
 
     return jsonify({
         'success': True,
-        'characters': result
+        'characters': result,
+        'total': total,
+        'page': page,
+        'page_size': page_size
     })
 
 
 @roleplay_bp.route('/detail/<int:rid>', methods=['GET'])
 @token_required
-def get_character_detail(current_user_id, rid):
+def get_character_detail(_, rid):
     """获取角色详情"""
     character = RoleplayCharacter.query.get(rid)
     if not character:
@@ -355,11 +387,17 @@ def get_character_detail(current_user_id, rid):
 
     detail = RoleplayCharacterDetail.query.get(rid)
     phrases = []
+    images_id = []
     if detail and detail.phrases:
         try:
             phrases = json.loads(detail.phrases)
         except (json.JSONDecodeError, TypeError):
             phrases = []
+    if detail and detail.images_id:
+        try:
+            images_id = json.loads(detail.images_id)
+        except (json.JSONDecodeError, TypeError):
+            images_id = []
 
     return jsonify({
         'success': True,
@@ -367,10 +405,10 @@ def get_character_detail(current_user_id, rid):
             'rid': character.rid,
             'type': character.type,
             'name': character.name,
-            'avatarId': character.avatar_id,
             'bio': detail.bio if detail else None,
             'phrases': phrases,
-            'detailAvatarId': detail.avatar_id if detail else None,
+            'images_token': [generate_file_token(fid) for fid in images_id],
+            'avatar_token': generate_file_token(detail.avatar_id) if detail and detail.avatar_id else None,
             'updatedAt': detail.updated_at.isoformat() + 'Z' if detail and detail.updated_at else None,
             'createdAt': character.created_at.isoformat() + 'Z' if character.created_at else None
         }

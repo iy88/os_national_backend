@@ -6,28 +6,38 @@
   - [1. 发送邮箱验证码](#1-发送邮箱验证码)
   - [2. 用户注册](#2-用户注册)
   - [3. 用户登录](#3-用户登录)
+- [管理员认证](#管理员认证)
+  - [4. 管理员登录](#4-管理员登录)
 - [用户信息](#用户信息)
-  - [4. 获取用户信息](#4-获取用户信息)
-  - [5. 更新用户信息](#5-更新用户信息)
+  - [5. 获取用户信息](#5-获取用户信息)
+  - [6. 更新用户信息](#6-更新用户信息)
+- [管理员信息](#管理员信息)
+  - [7. 获取管理员信息](#7-获取管理员信息)
+  - [8. 更新管理员信息](#8-更新管理员信息)
 - [文件接口](#文件接口)
-  - [6. 上传头像](#6-上传头像)
-  - [7. 获取头像](#7-获取头像)
+  - [9. 上传头像](#9-上传头像)
+  - [10. 获取头像](#10-获取头像)
+  - [11. 获取图片文件](#11-获取图片文件)
 - [Agent AI 接口](#agent-ai-接口)
-  - [8. 获取会话列表](#8-获取会话列表)
-  - [9. 获取会话详情](#9-获取会话详情)
-  - [10. 编辑会话标题](#10-编辑会话标题)
-  - [11. 发送消息（SSE 流式）](#11-发送消息sse-流式)
+  - [11. 获取会话列表](#11-获取会话列表)
+  - [12. 获取会话详情](#12-获取会话详情)
+  - [13. 编辑会话标题](#13-编辑会话标题)
+  - [14. 发送消息（SSE 流式）](#14-发送消息sse-流式)
 - [路线收藏接口](#路线收藏接口)
-  - [12. 获取收藏列表](#12-获取收藏列表)
-  - [13. 获取收藏详情](#13-获取收藏详情)
-  - [14. 收藏路线](#14-收藏路线)
-  - [15. 编辑收藏路线](#15-编辑收藏路线)
-  - [16. 删除收藏](#16-删除收藏)
+  - [15. 获取收藏列表](#15-获取收藏列表)
+  - [16. 获取收藏详情](#16-获取收藏详情)
+  - [17. 收藏路线](#17-收藏路线)
+  - [18. 编辑收藏路线](#18-编辑收藏路线)
+  - [19. 删除收藏](#19-删除收藏)
 - [Roleplay 角色扮演接口](#roleplay-角色扮演接口)
-  - [17. 获取角色列表](#17-获取角色列表)
-  - [18. 获取角色详情](#18-获取角色详情)
-  - [19. 发送消息（SSE 流式）](#19-发送消息sse-流式)
-  - [20. 获取对话列表](#20-获取对话列表)
+  - [20. 获取角色列表](#20-获取角色列表)
+  - [21. 获取角色详情](#21-获取角色详情)
+  - [22. 发送消息（SSE 流式）](#22-发送消息sse-流式)
+  - [23. 获取对话列表](#23-获取对话列表)
+- [Roleplay 管理员接口](#roleplay-管理员接口)
+  - [24. 创建角色](#24-创建角色)
+  - [25. 获取角色详情](#25-获取角色详情)
+  - [26. 更新角色](#26-更新角色)
 - [工具接口](#工具接口)
   - [健康检查](#健康检查)
 
@@ -118,7 +128,7 @@
 ### 3. 用户登录
 
 - **URL**: `POST /user/login`
-- **描述**: 用户登录，返回 JWT token
+- **描述**: 用户登录，返回 JWT token（role='user'）
 
 **请求**:
 
@@ -170,13 +180,58 @@
 
 ---
 
+## 管理员认证
+
+### 4. 管理员登录
+
+- **URL**: `POST /admin/login`
+- **描述**: 管理员登录，返回 JWT token（role='admin'）
+
+**请求**:
+
+```json
+{
+  "username": "admin",
+  "password": "secure_password"
+}
+```
+
+| 字段       | 类型     | 必填 | 说明     |
+|----------|--------|----|------|
+| username | string | 是  | 管理员用户名 |
+| password | string | 是  | 密码     |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "adminInfo": {
+    "aid": 1,
+    "username": "admin"
+  }
+}
+```
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid credentials"
+}
+```
+
+---
+
 ## 用户信息
 
-### 4. 获取用户信息
+### 5. 获取用户信息
 
 - **URL**: `GET /user/profile`
 - **描述**: 获取当前登录用户的详细信息
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -218,11 +273,11 @@ Authorization: Bearer <token>
 
 ---
 
-### 5. 更新用户信息
+### 6. 更新用户信息
 
 - **URL**: `PUT /user/profile`
 - **描述**: 批量（增量）更新当前用户信息，所有字段均为可选
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -275,14 +330,116 @@ Content-Type: application/json
 }
 ```
 
-| 字段       | 类型     | 说明     |
-|----------|--------|------|
-| rid      | int    | 路线唯一标识 |
-| mid      | int    | 关联消息 ID |
-| title    | string | 路线标题   |
-| content  | string | 路线内容   |
-| createdAt | datetime | 创建时间  |
-| updatedAt | datetime | 更新时间  |
+**响应 (失败 - 409)**:
+
+```json
+{
+  "success": false,
+  "message": "Username already exists"
+}
+```
+
+---
+
+## 管理员信息
+
+### 7. 获取管理员信息
+
+- **URL**: `GET /admin/profile`
+- **描述**: 获取当前登录管理员的详细信息
+- **认证**: 需要 Bearer Token（admin role）
+
+**请求**:
+
+```
+GET /admin/profile
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "adminInfo": {
+    "aid": 1,
+    "username": "admin"
+  }
+}
+```
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Token is missing"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
+
+### 8. 更新管理员信息
+
+- **URL**: `PUT /admin/profile`
+- **描述**: 批量（增量）更新当前管理员信息
+- **认证**: 需要 Bearer Token（admin role）
+
+**请求**:
+
+```
+PUT /admin/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "username": "new_admin_username"
+}
+```
+
+| 字段       | 类型     | 必填 | 说明               |
+|----------|--------|----|------------------|
+| username | string | 否  | 用户名（3-80 字符），需唯一 |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "message": "Profile updated",
+  "adminInfo": {
+    "aid": 1,
+    "username": "new_admin_username"
+  }
+}
+```
+
+**响应 (失败 - 401)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
 
 **响应 (失败 - 409)**:
 
@@ -297,18 +454,18 @@ Content-Type: application/json
 
 ## 文件接口
 
-### 6. 上传头像
+### 9. 上传头像
 
 - **URL**: `POST /file/avatar/upload`
-- **描述**: 上传用户头像，如已有头像则替换旧头像（删除旧文件及记录）
+- **描述**: 上传用户头像（从 JWT 获取 user_id），如已有头像则替换旧头像（删除旧文件及记录）
 - **Content-Type**: `multipart/form-data`
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
-| 字段      | 类型     | 必填 | 说明    |
-|---------|--------|----|-------|
-| user_id | string | 是  | 用户 ID |
-| file    | file   | 是  | 头像文件  |
+| 字段  | 类型   | 必填 | 说明     |
+|-----|------|----|--------|
+| file | file | 是  | 头像文件  |
 
 **限制**:
 
@@ -345,9 +502,9 @@ Content-Type: application/json
 
 ---
 
-### 7. 获取头像
+### 10. 获取头像
 
-- **URL**: `GET /file/avatar/fetch?token=<avatar_token>`
+- **URL**: `GET /file/avatar/fetch?token=<token>`
 - **描述**: 根据 avatar token 获取头像图片
 - **返回**: 图片二进制数据，MIME 类型
 
@@ -379,18 +536,35 @@ GET /file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-## 工具接口
+### 11. 获取图片文件
 
-### 健康检查
+- **URL**: `GET /file/image/fetch?token=<token>`
+- **描述**: 根据 file token 获取图片文件（用于 roleplay 角色图片等）
+- **返回**: 图片二进制数据，MIME 类型
 
-- **URL**: `GET /health`
-- **描述**: 服务健康检查
+**请求**:
 
-**响应**:
+```
+GET /file/image/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**响应**: 图片二进制数据
+
+**响应 (失败 - 401)**:
 
 ```json
 {
-  "status": "ok"
+  "success": false,
+  "message": "Invalid or expired token"
+}
+```
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Image not found"
 }
 ```
 
@@ -398,11 +572,11 @@ GET /file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## Agent AI 接口
 
-### 8. 获取会话列表
+### 11. 获取会话列表
 
 - **URL**: `GET /agent/travel-route-plan/chat/list`
 - **描述**: 获取当前用户的所有 AI 对话会话列表
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -442,7 +616,7 @@ Authorization: Bearer <token>
 
 - **URL**: `GET /agent/travel-route-plan/chat/detail/:sid`
 - **描述**: 获取指定会话的详细信息（含消息历史）
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -486,7 +660,7 @@ Authorization: Bearer <token>
 
 - **URL**: `PUT /agent/travel-route-plan/chat/title/edit/:sid`
 - **描述**: 编辑指定会话的标题
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -540,7 +714,7 @@ Content-Type: application/json
 
 - **URL**: `POST /agent/travel-route-plan/message`
 - **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 - **返回**: `text/event-stream`
 
 **请求（正常发送）**:
@@ -639,11 +813,11 @@ data: {"type": "done", "sid": 1, "mid": 123}
 
 ## 路线收藏接口
 
-### 11. 获取收藏列表
+### 15. 获取收藏列表
 
 - **URL**: `GET /route/list`
 - **描述**: 获取当前用户收藏的所有路线
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -679,11 +853,11 @@ Authorization: Bearer <token>
 
 ---
 
-### 12. 获取收藏详情
+### 16. 获取收藏详情
 
 - **URL**: `GET /route/detail/:rid`
 - **描述**: 获取指定收藏路线的详细信息
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -719,11 +893,11 @@ Authorization: Bearer <token>
 
 ---
 
-### 13. 收藏路线
+### 17. 收藏路线
 
 - **URL**: `POST /route/favorite`
 - **描述**: 收藏 AI 返回的路线（只提供 mid，后端自动复制 session.title 和 message.content）
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -761,11 +935,11 @@ Content-Type: application/json
 
 ---
 
-### 14. 编辑收藏路线
+### 18. 编辑收藏路线
 
 - **URL**: `PUT /route/edit/:rid`
 - **描述**: 编辑收藏路线的标题或内容
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -821,11 +995,11 @@ Content-Type: application/json
 
 ---
 
-### 15. 删除收藏
+### 19. 删除收藏
 
 - **URL**: `DELETE /route/delete/:rid`
 - **描述**: 删除指定的收藏路线
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -851,26 +1025,34 @@ Authorization: Bearer <token>
 
 | type | 说明 | 场景示例 |
 |------|------|---------|
-| game_expert | 游戏达人 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| game_expert | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧 |
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
 | game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
 
-### 17. 获取角色列表
+### 20. 获取角色列表
 
 - **URL**: `GET /agent/roleplay/list/:type`
-- **描述**: 获取指定类型的角色列表（不含详情）
-- **认证**: 需要 Bearer Token
+- **描述**: 获取指定类型的角色列表（不含详情），支持分页和字段搜索
+- **认证**: 需要 Bearer Token（user role）
 
 **路径参数**:
 
 | 参数  | 类型   | 必填 | 说明                                              |
 |-------|-------|----|-------------------------------------------------|
-| type  | string | 是  | 角色类型：game_expert / esports_player / game_hero |
+| type  | string | 是  | 角色类型：game_expert / esports_player / game_hero，或 `all` 表示全部类型 |
+
+**查询参数**:
+
+| 参数      | 类型    | 必填 | 说明                        |
+|---------|-------|----|---------------------------|
+| page    | int   | 否  | 页码（默认 1，< 1 时返回 400）   |
+| page_size | int | 否  | 每页数量（默认 10，最大 50，< 1 时返回 400） |
+| search  | string | 否  | 搜索关键词，匹配 name 或 bio    |
 
 **请求**:
 
 ```
-GET /agent/roleplay/list/game_expert
+GET /agent/roleplay/list/game_expert?page=1&page_size=10&search=游戏
 Authorization: Bearer <token>
 ```
 
@@ -882,20 +1064,30 @@ Authorization: Bearer <token>
   "characters": [
     {
       "rid": 1,
-      "name": "游戏达人小王",
-      "avatarId": 1,
+      "type": "game_expert",
+      "name": "电竞明星小王",
+      "bio": "10年游戏经验，专注RPG和策略游戏",
+      "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "createdAt": "2026-03-27T10:00:00Z"
     }
-  ]
+  ],
+  "total": 25,
+  "page": 1,
+  "page_size": 10
 }
 ```
 
-| 字段       | 类型     | 说明    |
-|----------|--------|-------|
-| rid      | int    | 角色唯一标识 |
-| name     | string | 角色显示名  |
-| avatarId | int    | 头像文件 ID |
+| 字段        | 类型     | 说明    |
+|-----------|--------|-------|
+| rid       | int    | 角色唯一标识 |
+| type     | string | 角色类型   |
+| name      | string | 角色显示名  |
+| bio       | string | 角色简介   |
+| avatar_token | string | 头像 Token（JWT） |
 | createdAt | datetime | 创建时间 |
+| total     | int    | 符合条件总数 |
+| page      | int    | 当前页码   |
+| page_size | int    | 每页数量   |
 
 **响应 (失败 - 400)**:
 
@@ -906,13 +1098,22 @@ Authorization: Bearer <token>
 }
 ```
 
+**响应 (失败 - 400，参数异常)**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid page or page_size"
+}
+```
+
 ---
 
-### 18. 获取角色详情
+### 21. 获取角色详情
 
 - **URL**: `GET /agent/roleplay/detail/:rid`
 - **描述**: 获取角色的详细信息（含简介、名言短语等）
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -929,28 +1130,28 @@ Authorization: Bearer <token>
   "character": {
     "rid": 1,
     "type": "game_expert",
-    "name": "游戏达人小王",
-    "avatarId": 1,
+    "name": "电竞明星小王",
     "bio": "10年游戏经验，专注RPG和策略游戏",
     "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
-    "detailAvatarId": 1,
+    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+    "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "updatedAt": "2026-03-27T10:00:00Z",
     "createdAt": "2026-03-27T09:00:00Z"
   }
 }
 ```
 
-| 字段            | 类型       | 说明       |
-|---------------|----------|----------|
-| rid           | int      | 角色唯一标识   |
-| type          | string   | 角色类型     |
-| name          | string   | 角色显示名    |
-| avatarId      | int      | 角色列表头像 ID |
-| bio           | string   | 角色简介     |
-| phrases       | string[] | 名言/短语数组  |
-| detailAvatarId | int     | 详情页头像 ID |
-| updatedAt     | datetime | 详情更新时间   |
-| createdAt     | datetime | 角色创建时间   |
+| 字段        | 类型       | 说明           |
+|-----------|----------|--------------|
+| rid       | int      | 角色唯一标识       |
+| type      | string   | 角色类型         |
+| name      | string   | 角色显示名        |
+| bio       | string   | 角色简介         |
+| phrases   | string[] | 名言/短语数组      |
+| images_token | string[] | 图片 Token 数组（JWT） |
+| avatar_token | string   | 头像 Token（JWT） |
+| updatedAt | datetime | 详情更新时间      |
+| createdAt | datetime | 角色创建时间      |
 
 **响应 (失败 - 404)**:
 
@@ -963,11 +1164,11 @@ Authorization: Bearer <token>
 
 ---
 
-### 19. 发送消息（SSE 流式）
+### 22. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/roleplay/message/send/:rid`
 - **描述**: 向角色发送消息，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 - **返回**: `text/event-stream`
 
 **请求（正常发送）**:
@@ -1038,11 +1239,11 @@ data: {"type": "done", "uid": 1, "rid": 1, "mid": 123}
 
 ---
 
-### 20. 获取对话列表
+### 23. 获取对话列表
 
 - **URL**: `GET /agent/roleplay/message/list/:rid`
 - **描述**: 获取与角色的所有对话记录（按时间升序）
-- **认证**: 需要 Bearer Token
+- **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
@@ -1085,5 +1286,241 @@ Authorization: Bearer <token>
 ```
 
 ---
+
+## Roleplay 管理员接口
+
+### 角色类型说明
+
+| type | 说明 | 场景示例 |
+|------|------|---------|
+| game_expert | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
+| game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
+
+### 24. 创建角色
+
+- **URL**: `POST /admin/roleplay/create`
+- **描述**: 创建新角色，支持同时上传头像和图片（均为可选）
+- **认证**: 需要 Bearer Token（admin role）
+- **Content-Type**: `application/json` 或 `multipart/form-data`
+
+**请求（JSON）**:
+
+```json
+{
+  "type": "game_expert",
+  "name": "电竞明星小王",
+  "bio": "10年游戏经验，专注RPG和策略游戏",
+  "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"]
+}
+```
+
+| 字段     | 类型     | 必填 | 说明                      |
+|---------|--------|----|-------------------------|
+| type    | string | 是  | 角色类型：game_expert / esports_player / game_hero |
+| name    | string | 是  | 角色显示名（3-80 字符）            |
+| bio     | string | 否  | 角色简介                    |
+| phrases | string[] | 否  | 名言/短语数组                |
+
+**请求（multipart/form-data）**:
+
+| 字段     | 类型   | 必填 | 说明           |
+|---------|------|----|--------------|
+| type    | string | 是  | 角色类型        |
+| name    | string | 是  | 角色显示名       |
+| bio     | string | 否  | 角色简介        |
+| phrases | string | 否  | JSON 数组字符串   |
+| avatar  | file   | 否  | 头像文件（可选）   |
+| images  | file   | 否  | 图片文件（多选，可选） |
+
+**限制**:
+
+- 文件大小：最大 2MB
+- 支持格式：png, jpg, jpeg, gif, webp
+| bio     | string | 否  | 角色简介                    |
+| phrases | string[] | 否  | 名言/短语数组                |
+
+**响应 (成功 - 201)**:
+
+```json
+{
+  "success": true,
+  "message": "Character created",
+  "character": {
+    "rid": 1,
+    "type": "game_expert",
+    "name": "电竞明星小王",
+    "bio": "10年游戏经验，专注RPG和策略游戏",
+    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
+    "avatar_token": null,
+    "images_token": [],
+    "created_at": "2026-03-27T10:00:00Z"
+  }
+}
+```
+
+**响应 (失败 - 400)**:
+
+```json
+{
+  "success": false,
+  "message": "type and name are required"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
+
+### 25. 获取角色详情
+
+- **URL**: `GET /admin/roleplay/<int:rid>/detail`
+- **描述**: 获取角色的详细信息（含简介、名言短语、头像、图片等）
+- **认证**: 需要 Bearer Token（admin role）
+
+**请求**:
+
+```
+GET /admin/roleplay/1/detail
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "character": {
+    "rid": 1,
+    "type": "game_expert",
+    "name": "电竞明星小王",
+    "bio": "10年游戏经验，专注RPG和策略游戏",
+    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
+    "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+    "created_at": "2026-03-27T09:00:00Z",
+    "updated_at": "2026-03-27T10:00:00Z"
+  }
+}
+```
+
+| 字段       | 类型     | 说明       |
+|----------|--------|----------|
+| rid      | int    | 角色唯一标识   |
+| type    | string | 角色类型     |
+| name    | string | 角色显示名    |
+| bio     | string | 角色简介     |
+| phrases | string[] | 名言/短语数组  |
+| avatar_token | string | 头像 Token（JWT） |
+| images_token | string[] | 图片 Token 数组（JWT） |
+| created_at | datetime | 创建时间 |
+| updated_at | datetime | 详情更新时间 |
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Character not found"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
+
+### 26. 更新角色
+
+- **URL**: `PUT /admin/roleplay/<int:rid>/update`
+- **描述**: 更新角色信息，支持 multipart/form-data（上传头像/图片）或 JSON，支持删除头像/图片
+- **认证**: 需要 Bearer Token（admin role）
+- **Content-Type**: `application/json` 或 `multipart/form-data`
+
+**请求（JSON）**:
+
+```json
+{
+  "name": "新角色名",
+  "bio": "新简介",
+  "phrases": ["新名言1", "新名言2"],
+  "delete_avatar": false,
+  "delete_images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+}
+```
+
+| 字段           | 类型     | 必填 | 说明                      |
+|--------------|--------|----|-------------------------|
+| name         | string | 否  | 角色显示名                  |
+| bio          | string | 否  | 角色简介                    |
+| phrases      | string[] | 否  | 名言/短语数组                 |
+| avatar       | file   | 否  | 新头像文件（替换旧头像 multipart 专用） |
+| images       | file   | 否  | 新增图片文件（追加到现有列表 multipart 专用） |
+| delete_avatar | bool   | 否  | 是否删除头像（true 时删除）         |
+| delete_images_token | string[] | 否  | 要删除的图片 token 列表（增量删除）  |
+
+**请求（multipart/form-data）**:
+
+| 字段           | 类型   | 必填 | 说明        |
+|--------------|------|----|-----------|
+| name         | string | 否  | 角色显示名   |
+| bio          | string | 否  | 角色简介     |
+| phrases      | string | 否  | JSON 数组字符串 |
+| avatar       | file  | 否  | 新头像文件   |
+| images       | file  | 否  | 新增图片文件（多选，可多次发送） |
+| delete_avatar | string | 否  | `true` 时删除头像 |
+| delete_images_token | string | 否  | 要删除的图片 token（可多次发送） |
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "message": "Character updated",
+  "character": {
+    "rid": 1,
+    "type": "game_expert",
+    "name": "新角色名",
+    "bio": "新简介",
+    "phrases": ["新名言1", "新名言2"],
+    "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+  }
+}
+```
+
+**响应 (失败 - 404)**:
+
+```json
+{
+  "success": false,
+  "message": "Character not found"
+}
+```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
+
 
 ## 工具接口

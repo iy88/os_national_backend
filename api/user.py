@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from models import db
 from models.user import User, UserInfo
 from utils.email_utils import is_valid_email
-from utils.file_utils import generate_avatar_token
+from utils.file_utils import generate_file_token
 from utils.jwt_utils import generate_token, token_required
 from utils.password_utils import hash_password, verify_password
 from utils.redis_client import get_verification_code, delete_verification_code
@@ -34,7 +34,7 @@ def login():
 
     avatar_token = None
     if user.user_info and user.user_info.avatar_id:
-        avatar_token = generate_avatar_token(user.uid, user.user_info.avatar_id)
+        avatar_token = generate_file_token(user.user_info.avatar_id)
 
     return jsonify({
         'success': True,
@@ -124,7 +124,7 @@ def get_profile(current_user_id):
 
     avatar_token = None
     if user.user_info and user.user_info.avatar_id:
-        avatar_token = generate_avatar_token(user.uid, user.user_info.avatar_id)
+        avatar_token = generate_file_token(user.user_info.avatar_id)
 
     return jsonify({
         'success': True,
