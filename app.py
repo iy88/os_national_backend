@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 
-from api import user_bp, email_bp, file_bp, agent_bp, route_bp, roleplay_bp, admin_bp, roleplay_admin_bp
+from api import user_bp, email_bp, file_bp, agent_bp, route_bp, roleplay_bp, admin_bp, roleplay_admin_bp, dashboard_bp
 from config import Config
 from models import db
 
@@ -17,6 +17,7 @@ app.register_blueprint(route_bp)
 app.register_blueprint(roleplay_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(roleplay_admin_bp)
+app.register_blueprint(dashboard_bp)
 
 
 @app.route('/health', methods=['GET'])

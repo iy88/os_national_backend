@@ -11,7 +11,8 @@ class Admin(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+                           onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     admin_info = db.relationship('AdminInfo', backref='admin', uselist=False, cascade='all, delete-orphan')
 
@@ -25,6 +26,7 @@ class AdminInfo(db.Model):
     age = db.Column(db.Integer, nullable=True)
     basic_info = db.Column(db.Text, nullable=True)
     bio = db.Column(db.Text, nullable=True)
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+                           onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     avatar = db.relationship('File', foreign_keys=[avatar_id], post_update=True)

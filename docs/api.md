@@ -3,44 +3,45 @@
 ## 目录
 
 - [用户认证](#用户认证)
-  - [1. 发送邮箱验证码](#1-发送邮箱验证码)
-  - [2. 用户注册](#2-用户注册)
-  - [3. 用户登录](#3-用户登录)
+    - [1. 发送邮箱验证码](#1-发送邮箱验证码)
+    - [2. 用户注册](#2-用户注册)
+    - [3. 用户登录](#3-用户登录)
 - [管理员认证](#管理员认证)
-  - [4. 管理员登录](#4-管理员登录)
+    - [4. 管理员登录](#4-管理员登录)
 - [用户信息](#用户信息)
-  - [5. 获取用户信息](#5-获取用户信息)
-  - [6. 更新用户信息](#6-更新用户信息)
+    - [5. 获取用户信息](#5-获取用户信息)
+    - [6. 更新用户信息](#6-更新用户信息)
 - [管理员信息](#管理员信息)
-  - [7. 获取管理员信息](#7-获取管理员信息)
-  - [8. 更新管理员信息](#8-更新管理员信息)
+    - [7. 获取管理员信息](#7-获取管理员信息)
+    - [8. 更新管理员信息](#8-更新管理员信息)
 - [文件接口](#文件接口)
-  - [9. 上传头像](#9-上传头像)
-  - [10. 获取头像](#10-获取头像)
-  - [11. 获取图片文件](#11-获取图片文件)
+    - [9. 上传头像](#9-上传头像)
+    - [10. 获取头像](#10-获取头像)
+    - [11. 获取图片文件](#11-获取图片文件)
 - [Agent AI 接口](#agent-ai-接口)
-  - [11. 获取会话列表](#11-获取会话列表)
-  - [12. 获取会话详情](#12-获取会话详情)
-  - [13. 编辑会话标题](#13-编辑会话标题)
-  - [14. 发送消息（SSE 流式）](#14-发送消息sse-流式)
+    - [11. 获取会话列表](#11-获取会话列表)
+    - [12. 获取会话详情](#12-获取会话详情)
+    - [13. 编辑会话标题](#13-编辑会话标题)
+    - [14. 发送消息（SSE 流式）](#14-发送消息sse-流式)
 - [路线收藏接口](#路线收藏接口)
-  - [15. 获取收藏列表](#15-获取收藏列表)
-  - [16. 获取收藏详情](#16-获取收藏详情)
-  - [17. 收藏路线](#17-收藏路线)
-  - [18. 编辑收藏路线](#18-编辑收藏路线)
-  - [19. 删除收藏](#19-删除收藏)
+    - [15. 获取收藏列表](#15-获取收藏列表)
+    - [16. 获取收藏详情](#16-获取收藏详情)
+    - [17. 收藏路线](#17-收藏路线)
+    - [18. 编辑收藏路线](#18-编辑收藏路线)
+    - [19. 删除收藏](#19-删除收藏)
 - [Roleplay 角色扮演接口](#roleplay-角色扮演接口)
-  - [20. 获取角色列表](#20-获取角色列表)
-  - [21. 获取角色详情](#21-获取角色详情)
-  - [22. 发送消息（SSE 流式）](#22-发送消息sse-流式)
-  - [23. 获取对话列表](#23-获取对话列表)
+    - [20. 获取角色列表](#20-获取角色列表)
+    - [21. 获取角色详情](#21-获取角色详情)
+    - [22. 发送消息（SSE 流式）](#22-发送消息sse-流式)
+    - [23. 获取对话列表](#23-获取对话列表)
 - [Roleplay 管理员接口](#roleplay-管理员接口)
-  - [24. 创建角色](#24-创建角色)
-  - [25. 获取角色详情](#25-获取角色详情)
-  - [26. 更新角色](#26-更新角色)
-  - [27. 删除角色](#27-删除角色)
+    - [24. 创建角色](#24-创建角色)
+    - [25. 获取角色详情](#25-获取角色详情)
+    - [26. 更新角色](#26-更新角色)
+    - [27. 删除角色](#27-删除角色)
+    - [28. Dashboard 统计](#28-dashboard-统计)
 - [工具接口](#工具接口)
-  - [健康检查](#健康检查)
+    - [健康检查](#健康检查)
 
 ## 用户认证
 
@@ -198,7 +199,7 @@
 ```
 
 | 字段       | 类型     | 必填 | 说明     |
-|----------|--------|----|------|
+|----------|--------|----|--------|
 | username | string | 是  | 管理员用户名 |
 | password | string | 是  | 密码     |
 
@@ -464,9 +465,9 @@ Content-Type: application/json
 
 **请求**:
 
-| 字段  | 类型   | 必填 | 说明     |
-|-----|------|----|--------|
-| file | file | 是  | 头像文件  |
+| 字段   | 类型   | 必填 | 说明   |
+|------|------|----|------|
+| file | file | 是  | 头像文件 |
 
 **限制**:
 
@@ -603,11 +604,11 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段                   | 类型     | 说明               |
-|----------------------|--------|------------------|
-| sid                  | int    | 会话唯一标识           |
-| title                | string | 会话标题（暂时用时间戳）     |
-| hasIncompleteMessage | bool   | 是否有未完成的流式消息（可恢复） |
+| 字段                   | 类型       | 说明               |
+|----------------------|----------|------------------|
+| sid                  | int      | 会话唯一标识           |
+| title                | string   | 会话标题（暂时用时间戳）     |
+| hasIncompleteMessage | bool     | 是否有未完成的流式消息（可恢复） |
 | createdAt            | datetime | 创建时间             |
 | updatedAt            | datetime | 最后更新时间           |
 
@@ -635,8 +636,18 @@ Authorization: Bearer <token>
     "sid": 1,
     "title": "2026-03-27 10:30",
     "messages": [
-      {"mid": 1, "role": "user", "content": "我想去云南", "createdAt": "2026-03-27T10:00:00Z"},
-      {"mid": 2, "role": "assistant", "content": "云南推荐路线...", "createdAt": "2026-03-27T10:00:05Z"}
+      {
+        "mid": 1,
+        "role": "user",
+        "content": "我想去云南",
+        "createdAt": "2026-03-27T10:00:00Z"
+      },
+      {
+        "mid": 2,
+        "role": "assistant",
+        "content": "云南推荐路线...",
+        "createdAt": "2026-03-27T10:00:05Z"
+      }
     ],
     "incompleteMid": null,
     "createdAt": "2026-03-27T10:00:00Z",
@@ -645,15 +656,15 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段                 | 类型       | 说明               |
-|--------------------|----------|------------------|
-| messages           | array    | 消息列表             |
-| messages[].mid     | int      | 消息 ID            |
-| messages[].role    | string   | user / assistant |
-| messages[].content | string   | 消息内容             |
-| messages[].createdAt | datetime | 消息创建时间         |
-| messages[].updatedAt | datetime | 消息更新时间         |
-| incompleteMid      | int/null | 未完成的流式消息 ID（可恢复） |
+| 字段                   | 类型       | 说明               |
+|----------------------|----------|------------------|
+| messages             | array    | 消息列表             |
+| messages[].mid       | int      | 消息 ID            |
+| messages[].role      | string   | user / assistant |
+| messages[].content   | string   | 消息内容             |
+| messages[].createdAt | datetime | 消息创建时间           |
+| messages[].updatedAt | datetime | 消息更新时间           |
+| incompleteMid        | int/null | 未完成的流式消息 ID（可恢复） |
 
 ---
 
@@ -675,8 +686,8 @@ Content-Type: application/json
 }
 ```
 
-| 字段   | 类型     | 必填 | 说明   |
-|-------|--------|----|------|
+| 字段    | 类型     | 必填 | 说明  |
+|-------|--------|----|-----|
 | title | string | 是  | 新标题 |
 
 **响应 (成功)**:
@@ -693,12 +704,12 @@ Content-Type: application/json
 }
 ```
 
-| 字段       | 类型     | 说明   |
-|----------|--------|------|
-| sid      | int    | 会话 ID |
-| title    | string | 会话标题 |
-| createdAt | datetime | 创建时间 |
-| updatedAt | datetime | 更新时间 |
+| 字段        | 类型       | 说明    |
+|-----------|----------|-------|
+| sid       | int      | 会话 ID |
+| title     | string   | 会话标题  |
+| createdAt | datetime | 创建时间  |
+| updatedAt | datetime | 更新时间  |
 
 **响应 (失败 - 404)**:
 
@@ -731,10 +742,10 @@ Content-Type: application/json
 }
 ```
 
-| 字段      | 类型     | 必填 | 说明                          |
-|---------|--------|----|-----------------------------|
+| 字段      | 类型     | 必填 | 说明                       |
+|---------|--------|----|--------------------------|
 | content | string | 是* | 消息内容（新会话/继续会话必填，恢复模式可不传） |
-| sid     | int    | 否  | 会话 ID，不传则创建新会话            |
+| sid     | int    | 否  | 会话 ID，不传则创建新会话           |
 
 **请求（重新生成）**:
 
@@ -749,13 +760,14 @@ Content-Type: application/json
 }
 ```
 
-| 字段           | 类型 | 必填 | 说明                                       |
-|--------------|----|----|------------------------------------------|
-| sid          | int | 是  | 会话 ID                                    |
-| regenerateMid | int | 是  | 要重新生成的 assistant 消息 ID             |
-| content       | string | 否  | 重新生成模式下不传（忽略）                          |
+| 字段            | 类型     | 必填 | 说明                     |
+|---------------|--------|----|------------------------|
+| sid           | int    | 是  | 会话 ID                  |
+| regenerateMid | int    | 是  | 要重新生成的 assistant 消息 ID |
+| content       | string | 否  | 重新生成模式下不传（忽略）          |
 
 **重新生成说明**：
+
 - 传入 `regenerateMid` 时进入重生成模式，忽略 `content`
 - `regenerateMid` 必须是该用户会话下的 assistant 消息
 - 旧消息会被删除，用新消息替代
@@ -776,19 +788,21 @@ data: {"type": "done", "sid": 1, "mid": 123, "title": "云南5日游推荐"}
 ```
 
 **说明**:
+
 - `start`: 流开始，包含会话 ID 和消息 ID
 - `content`: **实时增量发送**，每个 chunk 都单独发送一个 SSE 事件
 - `catchup`: 恢复模式专用，直接读取 Redis 缓存的全量内容一次性推送
 - `error`: 发生错误时发送，**错误消息会落盘到数据库**；随后仍会发送 `done` 事件结束流
-- `done`: 流结束，**第一轮对话/重新生成完成时 payload 包含 `title` 字段**（自动生成的会话标题，10～18字）；错误处理完成后也会发送 `done`
+- `done`: 流结束，**第一轮对话/重新生成完成时 payload 包含 `title` 字段**（自动生成的会话标题，10～18字）；错误处理完成后也会发送
+  `done`
 - `ping`: 服务端 keepalive 注释行（`:` 开头），客户端无需处理，代理也不会缓冲
 
 **错误处理**：
 
-| 错误类型 | 错误消息 | 说明 |
-|---------|---------|------|
+| 错误类型    | 错误消息                        | 说明                      |
+|---------|-----------------------------|-------------------------|
 | AI 生成失败 | API 返回的原始错误信息或"生成失败，请稍后重试。" | 如 API 调用失败、无效 session 等 |
-| 系统内部错误 | "系统内部错误，请稍后重试。" | 如数据库落盘失败、未分类异常 |
+| 系统内部错误  | "系统内部错误，请稍后重试。"             | 如数据库落盘失败、未分类异常          |
 
 错误发生时，错误消息会**优先落盘到该条 assistant 消息**，再通过 SSE 通知前端，确保数据不丢失。
 
@@ -808,7 +822,8 @@ data: {"type": "content", "content": "...继续输出新内容..."}
 data: {"type": "done", "sid": 1, "mid": 123}
 ```
 
-说明：恢复模式先发一次 `catchup` 事件将全量缓存内容一次性推送给前端（用于快速同步），随后继续追尾新产生的 chunk。Producer 意外中断时，会自动重启并继续。若消费者超过 120 秒无任何事件则判定超时，发送 error 事件后结束流。
+说明：恢复模式先发一次 `catchup` 事件将全量缓存内容一次性推送给前端（用于快速同步），随后继续追尾新产生的 chunk。Producer
+意外中断时，会自动重启并继续。若消费者超过 120 秒无任何事件则判定超时，发送 error 事件后结束流。
 
 ---
 
@@ -844,13 +859,13 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段       | 类型     | 说明     |
-|----------|--------|------|
-| rid      | int    | 路线唯一标识 |
-| mid      | int    | 关联消息 ID |
-| title    | string | 路线标题   |
-| createdAt | datetime | 创建时间  |
-| updatedAt | datetime | 更新时间  |
+| 字段        | 类型       | 说明      |
+|-----------|----------|---------|
+| rid       | int      | 路线唯一标识  |
+| mid       | int      | 关联消息 ID |
+| title     | string   | 路线标题    |
+| createdAt | datetime | 创建时间    |
+| updatedAt | datetime | 更新时间    |
 
 ---
 
@@ -883,14 +898,14 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段       | 类型     | 说明     |
-|----------|--------|------|
-| rid      | int    | 路线唯一标识 |
-| mid      | int    | 关联消息 ID |
-| title    | string | 路线标题   |
-| content  | string | 路线内容   |
-| createdAt | datetime | 创建时间  |
-| updatedAt | datetime | 更新时间  |
+| 字段        | 类型       | 说明      |
+|-----------|----------|---------|
+| rid       | int      | 路线唯一标识  |
+| mid       | int      | 关联消息 ID |
+| title     | string   | 路线标题    |
+| content   | string   | 路线内容    |
+| createdAt | datetime | 创建时间    |
+| updatedAt | datetime | 更新时间    |
 
 ---
 
@@ -955,10 +970,10 @@ Content-Type: application/json
 }
 ```
 
-| 字段     | 类型     | 必填 | 说明     |
-|---------|--------|----|------|
-| title   | string | 否  | 新标题   |
-| content | string | 否  | 新内容   |
+| 字段      | 类型     | 必填 | 说明  |
+|---------|--------|----|-----|
+| title   | string | 否  | 新标题 |
+| content | string | 否  | 新内容 |
 
 **响应 (成功)**:
 
@@ -976,14 +991,14 @@ Content-Type: application/json
 }
 ```
 
-| 字段       | 类型     | 说明     |
-|----------|--------|------|
-| rid      | int    | 路线唯一标识 |
-| mid      | int    | 关联消息 ID |
-| title    | string | 路线标题   |
-| content  | string | 路线内容   |
-| createdAt | datetime | 创建时间  |
-| updatedAt | datetime | 更新时间  |
+| 字段        | 类型       | 说明      |
+|-----------|----------|---------|
+| rid       | int      | 路线唯一标识  |
+| mid       | int      | 关联消息 ID |
+| title     | string   | 路线标题    |
+| content   | string   | 路线内容    |
+| createdAt | datetime | 创建时间    |
+| updatedAt | datetime | 更新时间    |
 
 **响应 (失败 - 404)**:
 
@@ -1024,11 +1039,11 @@ Authorization: Bearer <token>
 
 ### 角色类型说明
 
-| type | 说明 | 场景示例 |
-|------|------|---------|
-| game_expert | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| type           | 说明   | 场景示例               |
+|----------------|------|--------------------|
+| game_expert    | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧   |
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
-| game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
+| game_hero      | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴   |
 
 ### 20. 获取角色列表
 
@@ -1038,17 +1053,17 @@ Authorization: Bearer <token>
 
 **路径参数**:
 
-| 参数  | 类型   | 必填 | 说明                                              |
-|-------|-------|----|-------------------------------------------------|
-| type  | string | 是  | 角色类型：game_expert / esports_player / game_hero，或 `all` 表示全部类型 |
+| 参数   | 类型     | 必填 | 说明                                                           |
+|------|--------|----|--------------------------------------------------------------|
+| type | string | 是  | 角色类型：game_expert / esports_player / game_hero，或 `all` 表示全部类型 |
 
 **查询参数**:
 
-| 参数      | 类型    | 必填 | 说明                        |
-|---------|-------|----|---------------------------|
-| page    | int   | 否  | 页码（默认 1，< 1 时返回 400）   |
-| page_size | int | 否  | 每页数量（默认 10，最大 50，< 1 时返回 400） |
-| search  | string | 否  | 搜索关键词，匹配 name 或 bio    |
+| 参数        | 类型     | 必填 | 说明                            |
+|-----------|--------|----|-------------------------------|
+| page      | int    | 否  | 页码（默认 1，< 1 时返回 400）          |
+| page_size | int    | 否  | 每页数量（默认 10，最大 50，< 1 时返回 400） |
+| search    | string | 否  | 搜索关键词，匹配 name 或 bio           |
 
 **请求**:
 
@@ -1078,17 +1093,17 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段        | 类型     | 说明    |
-|-----------|--------|-------|
-| rid       | int    | 角色唯一标识 |
-| type     | string | 角色类型   |
-| name      | string | 角色显示名  |
-| bio       | string | 角色简介   |
-| avatar_token | string | 头像 Token（JWT） |
-| createdAt | datetime | 创建时间 |
-| total     | int    | 符合条件总数 |
-| page      | int    | 当前页码   |
-| page_size | int    | 每页数量   |
+| 字段           | 类型       | 说明            |
+|--------------|----------|---------------|
+| rid          | int      | 角色唯一标识        |
+| type         | string   | 角色类型          |
+| name         | string   | 角色显示名         |
+| bio          | string   | 角色简介          |
+| avatar_token | string   | 头像 Token（JWT） |
+| createdAt    | datetime | 创建时间          |
+| total        | int      | 符合条件总数        |
+| page         | int      | 当前页码          |
+| page_size    | int      | 每页数量          |
 
 **响应 (失败 - 400)**:
 
@@ -1133,8 +1148,14 @@ Authorization: Bearer <token>
     "type": "game_expert",
     "name": "电竞明星小王",
     "bio": "10年游戏经验，专注RPG和策略游戏",
-    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
-    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+    "phrases": [
+      "游戏最重要的是体验过程",
+      "适度娱乐，沉迷伤身"
+    ],
+    "images_token": [
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    ],
     "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "updatedAt": "2026-03-27T10:00:00Z",
     "createdAt": "2026-03-27T09:00:00Z"
@@ -1142,17 +1163,17 @@ Authorization: Bearer <token>
 }
 ```
 
-| 字段        | 类型       | 说明           |
-|-----------|----------|--------------|
-| rid       | int      | 角色唯一标识       |
-| type      | string   | 角色类型         |
-| name      | string   | 角色显示名        |
-| bio       | string   | 角色简介         |
-| phrases   | string[] | 名言/短语数组      |
+| 字段           | 类型       | 说明               |
+|--------------|----------|------------------|
+| rid          | int      | 角色唯一标识           |
+| type         | string   | 角色类型             |
+| name         | string   | 角色显示名            |
+| bio          | string   | 角色简介             |
+| phrases      | string[] | 名言/短语数组          |
 | images_token | string[] | 图片 Token 数组（JWT） |
-| avatar_token | string   | 头像 Token（JWT） |
-| updatedAt | datetime | 详情更新时间      |
-| createdAt | datetime | 角色创建时间      |
+| avatar_token | string   | 头像 Token（JWT）    |
+| updatedAt    | datetime | 详情更新时间           |
+| createdAt    | datetime | 角色创建时间           |
 
 **响应 (失败 - 404)**:
 
@@ -1184,10 +1205,10 @@ Content-Type: application/json
 }
 ```
 
-| 字段     | 类型     | 必填 | 说明                          |
-|---------|--------|----|-----------------------------|
+| 字段      | 类型     | 必填 | 说明                       |
+|---------|--------|----|--------------------------|
 | content | string | 是* | 消息内容（新会话/继续会话必填，恢复模式可不传） |
-| rid     | int    | 是  | 角色 ID（路径参数）               |
+| rid     | int    | 是  | 角色 ID（路径参数）              |
 
 **请求（重新生成）**:
 
@@ -1201,13 +1222,14 @@ Content-Type: application/json
 }
 ```
 
-| 字段           | 类型 | 必填 | 说明                          |
-|--------------|----|----|-----------------------------|
-| rid          | int | 是  | 角色 ID（路径参数）               |
-| regenerateMid | int | 是  | 要重新生成的 assistant 消息 ID    |
-| content       | string | 否  | 重新生成模式下不传（忽略）                  |
+| 字段            | 类型     | 必填 | 说明                     |
+|---------------|--------|----|------------------------|
+| rid           | int    | 是  | 角色 ID（路径参数）            |
+| regenerateMid | int    | 是  | 要重新生成的 assistant 消息 ID |
+| content       | string | 否  | 重新生成模式下不传（忽略）          |
 
 **重新生成说明**：
+
 - 传入 `regenerateMid` 时进入重生成模式，忽略 `content`
 - `regenerateMid` 必须是该用户该角色会话下的 assistant 消息
 - 旧消息会被删除，用新消息替代
@@ -1227,6 +1249,7 @@ data: {"type": "done", "uid": 1, "rid": 1, "mid": 123}
 ```
 
 **说明**:
+
 - `start`: 流开始，包含用户 ID、角色 ID 和消息 ID
 - `content`: 实时增量发送
 - `catchup`: 恢复模式专用
@@ -1259,23 +1282,43 @@ Authorization: Bearer <token>
 {
   "success": true,
   "messages": [
-    {"mid": 1, "role": "user", "content": "你好", "createdAt": "2026-03-27T10:00:00Z"},
-    {"mid": 2, "role": "assistant", "content": "你好！有什么游戏问题可以问我", "createdAt": "2026-03-27T10:00:05Z"},
-    {"mid": 3, "role": "user", "content": "推荐一些RPG游戏", "createdAt": "2026-03-27T10:01:00Z"},
-    {"mid": 4, "role": "assistant", "content": "推荐《巫师3》、《老滚5》...", "createdAt": "2026-03-27T10:01:10Z"}
+    {
+      "mid": 1,
+      "role": "user",
+      "content": "你好",
+      "createdAt": "2026-03-27T10:00:00Z"
+    },
+    {
+      "mid": 2,
+      "role": "assistant",
+      "content": "你好！有什么游戏问题可以问我",
+      "createdAt": "2026-03-27T10:00:05Z"
+    },
+    {
+      "mid": 3,
+      "role": "user",
+      "content": "推荐一些RPG游戏",
+      "createdAt": "2026-03-27T10:01:00Z"
+    },
+    {
+      "mid": 4,
+      "role": "assistant",
+      "content": "推荐《巫师3》、《老滚5》...",
+      "createdAt": "2026-03-27T10:01:10Z"
+    }
   ],
   "incompleteMid": null
 }
 ```
 
-| 字段                 | 类型        | 说明               |
-|--------------------|----------|------------------|
-| messages           | array    | 消息列表（按时间升序）    |
-| messages[].mid     | int      | 消息 ID            |
-| messages[].role    | string   | user / assistant  |
-| messages[].content | string   | 消息内容            |
-| messages[].createdAt | datetime | 消息创建时间          |
-| incompleteMid      | int/null | 未完成的流式消息 ID（可恢复） |
+| 字段                   | 类型       | 说明               |
+|----------------------|----------|------------------|
+| messages             | array    | 消息列表（按时间升序）      |
+| messages[].mid       | int      | 消息 ID            |
+| messages[].role      | string   | user / assistant |
+| messages[].content   | string   | 消息内容             |
+| messages[].createdAt | datetime | 消息创建时间           |
+| incompleteMid        | int/null | 未完成的流式消息 ID（可恢复） |
 
 **响应 (失败 - 404)**:
 
@@ -1292,11 +1335,11 @@ Authorization: Bearer <token>
 
 ### 角色类型说明
 
-| type | 说明 | 场景示例 |
-|------|------|---------|
-| game_expert | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧 |
+| type           | 说明   | 场景示例               |
+|----------------|------|--------------------|
+| game_expert    | 电竞明星 | 游戏攻略咨询、游戏推荐、玩法技巧   |
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
-| game_hero | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴 |
+| game_hero      | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴   |
 
 ### 24. 创建角色
 
@@ -1312,34 +1355,37 @@ Authorization: Bearer <token>
   "type": "game_expert",
   "name": "电竞明星小王",
   "bio": "10年游戏经验，专注RPG和策略游戏",
-  "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"]
+  "phrases": [
+    "游戏最重要的是体验过程",
+    "适度娱乐，沉迷伤身"
+  ]
 }
 ```
 
-| 字段     | 类型     | 必填 | 说明                      |
-|---------|--------|----|-------------------------|
-| type    | string | 是  | 角色类型：game_expert / esports_player / game_hero |
-| name    | string | 是  | 角色显示名（3-80 字符）            |
-| bio     | string | 否  | 角色简介                    |
-| phrases | string[] | 否  | 名言/短语数组                |
+| 字段      | 类型       | 必填 | 说明                                            |
+|---------|----------|----|-----------------------------------------------|
+| type    | string   | 是  | 角色类型：game_expert / esports_player / game_hero |
+| name    | string   | 是  | 角色显示名（3-80 字符）                                |
+| bio     | string   | 否  | 角色简介                                          |
+| phrases | string[] | 否  | 名言/短语数组                                       |
 
 **请求（multipart/form-data）**:
 
-| 字段     | 类型   | 必填 | 说明           |
-|---------|------|----|--------------|
+| 字段      | 类型     | 必填 | 说明          |
+|---------|--------|----|-------------|
 | type    | string | 是  | 角色类型        |
 | name    | string | 是  | 角色显示名       |
 | bio     | string | 否  | 角色简介        |
-| phrases | string | 否  | JSON 数组字符串   |
-| avatar  | file   | 否  | 头像文件（可选）   |
+| phrases | string | 否  | JSON 数组字符串  |
+| avatar  | file   | 否  | 头像文件（可选）    |
 | images  | file   | 否  | 图片文件（多选，可选） |
 
 **限制**:
 
 - 文件大小：最大 2MB
 - 支持格式：png, jpg, jpeg, gif, webp
-| bio     | string | 否  | 角色简介                    |
-| phrases | string[] | 否  | 名言/短语数组                |
+  | bio | string | 否 | 角色简介 |
+  | phrases | string[] | 否 | 名言/短语数组 |
 
 **响应 (成功 - 201)**:
 
@@ -1352,7 +1398,10 @@ Authorization: Bearer <token>
     "type": "game_expert",
     "name": "电竞明星小王",
     "bio": "10年游戏经验，专注RPG和策略游戏",
-    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
+    "phrases": [
+      "游戏最重要的是体验过程",
+      "适度娱乐，沉迷伤身"
+    ],
     "avatar_token": null,
     "images_token": [],
     "created_at": "2026-03-27T10:00:00Z"
@@ -1403,26 +1452,32 @@ Authorization: Bearer <token>
     "type": "game_expert",
     "name": "电竞明星小王",
     "bio": "10年游戏经验，专注RPG和策略游戏",
-    "phrases": ["游戏最重要的是体验过程", "适度娱乐，沉迷伤身"],
+    "phrases": [
+      "游戏最重要的是体验过程",
+      "适度娱乐，沉迷伤身"
+    ],
     "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+    "images_token": [
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    ],
     "created_at": "2026-03-27T09:00:00Z",
     "updated_at": "2026-03-27T10:00:00Z"
   }
 }
 ```
 
-| 字段       | 类型     | 说明       |
-|----------|--------|----------|
-| rid      | int    | 角色唯一标识   |
-| type    | string | 角色类型     |
-| name    | string | 角色显示名    |
-| bio     | string | 角色简介     |
-| phrases | string[] | 名言/短语数组  |
-| avatar_token | string | 头像 Token（JWT） |
+| 字段           | 类型       | 说明               |
+|--------------|----------|------------------|
+| rid          | int      | 角色唯一标识           |
+| type         | string   | 角色类型             |
+| name         | string   | 角色显示名            |
+| bio          | string   | 角色简介             |
+| phrases      | string[] | 名言/短语数组          |
+| avatar_token | string   | 头像 Token（JWT）    |
 | images_token | string[] | 图片 Token 数组（JWT） |
-| created_at | datetime | 创建时间 |
-| updated_at | datetime | 详情更新时间 |
+| created_at   | datetime | 创建时间             |
+| updated_at   | datetime | 详情更新时间           |
 
 **响应 (失败 - 404)**:
 
@@ -1457,32 +1512,37 @@ Authorization: Bearer <token>
 {
   "name": "新角色名",
   "bio": "新简介",
-  "phrases": ["新名言1", "新名言2"],
+  "phrases": [
+    "新名言1",
+    "新名言2"
+  ],
   "delete_avatar": false,
-  "delete_images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+  "delete_images_token": [
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  ]
 }
 ```
 
-| 字段           | 类型     | 必填 | 说明                      |
-|--------------|--------|----|-------------------------|
-| name         | string | 否  | 角色显示名                  |
-| bio          | string | 否  | 角色简介                    |
-| phrases      | string[] | 否  | 名言/短语数组                 |
-| avatar       | file   | 否  | 新头像文件（替换旧头像 multipart 专用） |
-| images       | file   | 否  | 新增图片文件（追加到现有列表 multipart 专用） |
-| delete_avatar | bool   | 否  | 是否删除头像（true 时删除）         |
-| delete_images_token | string[] | 否  | 要删除的图片 token 列表（增量删除）  |
+| 字段                  | 类型       | 必填 | 说明                           |
+|---------------------|----------|----|------------------------------|
+| name                | string   | 否  | 角色显示名                        |
+| bio                 | string   | 否  | 角色简介                         |
+| phrases             | string[] | 否  | 名言/短语数组                      |
+| avatar              | file     | 否  | 新头像文件（替换旧头像 multipart 专用）    |
+| images              | file     | 否  | 新增图片文件（追加到现有列表 multipart 专用） |
+| delete_avatar       | bool     | 否  | 是否删除头像（true 时删除）             |
+| delete_images_token | string[] | 否  | 要删除的图片 token 列表（增量删除）        |
 
 **请求（multipart/form-data）**:
 
-| 字段           | 类型   | 必填 | 说明        |
-|--------------|------|----|-----------|
-| name         | string | 否  | 角色显示名   |
-| bio          | string | 否  | 角色简介     |
-| phrases      | string | 否  | JSON 数组字符串 |
-| avatar       | file  | 否  | 新头像文件   |
-| images       | file  | 否  | 新增图片文件（多选，可多次发送） |
-| delete_avatar | string | 否  | `true` 时删除头像 |
+| 字段                  | 类型     | 必填 | 说明                  |
+|---------------------|--------|----|---------------------|
+| name                | string | 否  | 角色显示名               |
+| bio                 | string | 否  | 角色简介                |
+| phrases             | string | 否  | JSON 数组字符串          |
+| avatar              | file   | 否  | 新头像文件               |
+| images              | file   | 否  | 新增图片文件（多选，可多次发送）    |
+| delete_avatar       | string | 否  | `true` 时删除头像        |
 | delete_images_token | string | 否  | 要删除的图片 token（可多次发送） |
 
 **响应 (成功)**:
@@ -1496,9 +1556,15 @@ Authorization: Bearer <token>
     "type": "game_expert",
     "name": "新角色名",
     "bio": "新简介",
-    "phrases": ["新名言1", "新名言2"],
+    "phrases": [
+      "新名言1",
+      "新名言2"
+    ],
     "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "images_token": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+    "images_token": [
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    ]
   }
 }
 ```
@@ -1562,6 +1628,81 @@ Authorization: Bearer <token>
   "message": "Cannot delete character with active sessions"
 }
 ```
+
+**响应 (失败 - 403)**:
+
+```json
+{
+  "success": false,
+  "message": "Admin access required"
+}
+```
+
+---
+
+### 28. Dashboard 统计
+
+- **URL**: `GET /admin/dashboard`
+- **描述**: 后台主页大屏统计数据概览
+- **认证**: 需要 Bearer Token（admin role）
+
+**请求**:
+
+```
+GET /admin/dashboard
+Authorization: Bearer <token>
+```
+
+**响应 (成功)**:
+
+```json
+{
+  "success": true,
+  "users": {
+    "total": 1234,
+    "today_new": 10
+  },
+  "characters": {
+    "total": 12,
+    "by_type": {
+      "game_expert": 4,
+      "esports_player": 4,
+      "game_hero": 4
+    }
+  },
+  "sessions": {
+    "total": 5678,
+    "travel": 4000,
+    "roleplay": 1678
+  },
+  "messages": {
+    "total": 23456,
+    "travel": 18000,
+    "roleplay": 5456
+  },
+  "routes": {
+    "total": 890
+  },
+  "files": {
+    "total": 345
+  }
+}
+```
+
+| 字段                 | 类型     | 说明                      |
+|--------------------|--------|-------------------------|
+| users.total        | int    | 用户总数                    |
+| users.today_new    | int    | 今日新增用户                  |
+| characters.total   | int    | 角色总数                    |
+| characters.by_type | object | 各类型角色数量                 |
+| sessions.total     | int    | 会话总数（travel + roleplay） |
+| sessions.travel    | int    | 旅行规划会话数                 |
+| sessions.roleplay  | int    | 角色扮演会话数                 |
+| messages.total     | int    | 消息总数（travel + roleplay） |
+| messages.travel    | int    | 旅行规划消息数                 |
+| messages.roleplay  | int    | 角色扮演消息数                 |
+| routes.total       | int    | 收藏路线总数                  |
+| files.total        | int    | 文件总数                    |
 
 **响应 (失败 - 403)**:
 

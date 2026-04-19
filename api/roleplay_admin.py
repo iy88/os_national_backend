@@ -9,7 +9,6 @@ from utils.file_utils import (
     allowed_avatar_file,
     save_avatar_file,
     get_avatar_file_path,
-    get_file_mime,
     generate_file_token, decode_file_token
 )
 from utils.jwt_utils import token_required

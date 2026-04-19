@@ -136,14 +136,14 @@ def _finalize_error_result(uid: int, rid: int, mid: int, err: Exception, generat
 
 
 def _run_stream_producer(
-    app,
-    uid: int,
-    rid: int,
-    mid: int,
-    base_messages: list,
-    app_id: str,
-    ai_session_id: str | None = None,
-    fallback_messages: list | None = None
+        app,
+        uid: int,
+        rid: int,
+        mid: int,
+        base_messages: list,
+        app_id: str,
+        ai_session_id: str | None = None,
+        fallback_messages: list | None = None
 ):
     """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件"""
     with app.app_context():
@@ -157,7 +157,8 @@ def _run_stream_producer(
         refresh_rp_stream_producer_lock(uid, rid)
 
         def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
-            for chunk in ai_provider.chat_stream(active_messages, sid=mid, resume=is_resume, session_id=active_session_id):
+            for chunk in ai_provider.chat_stream(active_messages, sid=mid, resume=is_resume,
+                                                 session_id=active_session_id):
                 append_rp_stream_content(mid, chunk)
                 append_rp_stream_event(mid, 'content', content=chunk)
                 refresh_rp_stream_producer_lock(uid, rid)
@@ -219,14 +220,14 @@ def _run_stream_producer(
 
 
 def _ensure_stream_producer(
-    app,
-    uid: int,
-    rid: int,
-    mid: int,
-    messages: list,
-    app_id: str,
-    ai_session_id: str | None = None,
-    fallback_messages: list | None = None
+        app,
+        uid: int,
+        rid: int,
+        mid: int,
+        messages: list,
+        app_id: str,
+        ai_session_id: str | None = None,
+        fallback_messages: list | None = None
 ):
     """确保同一个 uid/rid/mid 只有一个生产者"""
     lock_mid = get_rp_stream_producer_lock(uid, rid)
@@ -357,7 +358,8 @@ def list_characters(_, type):
         )
 
     total = query.count()
-    characters = query.order_by(RoleplayCharacter.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    characters = query.order_by(RoleplayCharacter.created_at.desc()).offset((page - 1) * page_size).limit(
+        page_size).all()
 
     result = [{
         'rid': c.rid,
@@ -508,7 +510,8 @@ def send_message(current_user_id, rid):
             clear_rp_stream_runtime(existing_mid)
         else:
             if lock_mid != str(existing_mid) and state.get('state') == 'running':
-                messages = [{"role": "system", "content": system_prompt}] + _build_messages(current_user_id, rid, exclude_mid=existing_mid)
+                messages = [{"role": "system", "content": system_prompt}] + _build_messages(current_user_id, rid,
+                                                                                            exclude_mid=existing_mid)
                 _ensure_stream_producer(
                     app_obj,
                     current_user_id,

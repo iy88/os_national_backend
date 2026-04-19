@@ -9,7 +9,7 @@
 | email         | VARCHAR(120) | UNIQUE, NOT NULL            | 邮箱            |
 | password_hash | VARCHAR(60)  | NOT NULL                    | 密码（bcrypt 加密） |
 | created_at    | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 创建时间          |
-| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP  | 更新时间          |
+| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP | 更新时间          |
 
 ## UserInfo 表 (user_info)
 
@@ -21,40 +21,40 @@
 | age        | INT         | NULLABLE                            | 年龄        |
 | basic_info | TEXT        | NULLABLE                            | 基本信息      |
 | bio        | TEXT        | NULLABLE                            | 简介        |
-| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间      |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP         | 更新时间      |
 
 ## Admin 表 (admins)
 
 | 字段            | 类型           | 约束                          | 说明            |
 |---------------|--------------|-----------------------------|---------------|
-| aid           | INT          | PRIMARY KEY, AUTO_INCREMENT | 管理员唯一标识      |
-| username      | VARCHAR(80)  | UNIQUE, NOT NULL            | 管理员用户名       |
-| email         | VARCHAR(120) | UNIQUE, NOT NULL            | 管理员邮箱        |
+| aid           | INT          | PRIMARY KEY, AUTO_INCREMENT | 管理员唯一标识       |
+| username      | VARCHAR(80)  | UNIQUE, NOT NULL            | 管理员用户名        |
+| email         | VARCHAR(120) | UNIQUE, NOT NULL            | 管理员邮箱         |
 | password_hash | VARCHAR(256) | NOT NULL                    | 密码（bcrypt 加密） |
 | created_at    | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 创建时间          |
-| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP  | 更新时间          |
+| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP | 更新时间          |
 
 ## AdminInfo 表 (admin_info)
 
-| 字段         | 类型          | 约束                                  | 说明        |
-|------------|-------------|-------------------------------------|-----------|
+| 字段         | 类型          | 约束                                   | 说明         |
+|------------|-------------|--------------------------------------|------------|
 | aid        | INT         | PRIMARY KEY, FOREIGN KEY(admins.aid) | 关联 Admin 表 |
-| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID   |
-| gender     | VARCHAR(10) | NULLABLE                            | 性别        |
-| age        | INT         | NULLABLE                            | 年龄        |
-| basic_info | TEXT        | NULLABLE                            | 基本信息      |
-| bio        | TEXT        | NULLABLE                            | 简介        |
-| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间      |
+| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID    |
+| gender     | VARCHAR(10) | NULLABLE                             | 性别         |
+| age        | INT         | NULLABLE                             | 年龄         |
+| basic_info | TEXT        | NULLABLE                             | 基本信息       |
+| bio        | TEXT        | NULLABLE                             | 简介         |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间       |
 
 ## File 表 (files)
 
-| 字段                | 类型           | 约束                               | 说明        |
-|-------------------|--------------|----------------------------------|-----------|
-| fid               | INT          | PRIMARY KEY, AUTO_INCREMENT      | 文件唯一标识    |
-| original_filename | VARCHAR(255) | NOT NULL                         | 原始文件名     |
-| secure_filename   | VARCHAR(255) | UNIQUE, NOT NULL                 | 安全文件名（唯一） |
-| created_at        | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 上传时间      |
-| updated_at        | DATETIME     | ON UPDATE CURRENT_TIMESTAMP      | 更新时间      |
+| 字段                | 类型           | 约束                          | 说明        |
+|-------------------|--------------|-----------------------------|-----------|
+| fid               | INT          | PRIMARY KEY, AUTO_INCREMENT | 文件唯一标识    |
+| original_filename | VARCHAR(255) | NOT NULL                    | 原始文件名     |
+| secure_filename   | VARCHAR(255) | UNIQUE, NOT NULL            | 安全文件名（唯一） |
+| created_at        | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 上传时间      |
+| updated_at        | DATETIME     | ON UPDATE CURRENT_TIMESTAMP | 更新时间      |
 
 ## 表关系
 
@@ -66,13 +66,13 @@
 
 ## ConversationSession 表 (conversation_sessions)
 
-| 字段         | 类型           | 约束                               | 说明           |
-|------------|--------------|----------------------------------|--------------|
-| sid        | INT          | PRIMARY KEY, AUTO_INCREMENT      | 会话唯一标识       |
-| uid        | INT          | FOREIGN KEY(users.uid), NOT NULL | 关联 User 表    |
+| 字段         | 类型           | 约束                               | 说明                    |
+|------------|--------------|----------------------------------|-----------------------|
+| sid        | INT          | PRIMARY KEY, AUTO_INCREMENT      | 会话唯一标识                |
+| uid        | INT          | FOREIGN KEY(users.uid), NOT NULL | 关联 User 表             |
 | title      | VARCHAR(255) | NOT NULL                         | 会话标题（AI 自动生成，或用户手动编辑） |
-| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 创建时间         |
-| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP      | 更新时间         |
+| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP        | 创建时间                  |
+| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP      | 更新时间                  |
 
 ## Message 表 (messages)
 
@@ -107,47 +107,47 @@
 
 ## RoleplayCharacter 表 (roleplay_characters)
 
-| 字段         | 类型           | 约束                                  | 说明                        |
-|------------|--------------|-------------------------------------|---------------------------|
-| rid        | INT          | PRIMARY KEY, AUTO_INCREMENT         | 角色唯一标识                    |
-| type       | VARCHAR(20)  | NOT NULL                            | 类型（game_expert=电竞明星 / esports_player=电竞选手 / game_hero=游戏英雄） |
-| name       | VARCHAR(80)  | NOT NULL                            | 角色显示名                      |
-| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP           | 创建时间                      |
-| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP         | 更新时间                      |
+| 字段         | 类型          | 约束                          | 说明                                                          |
+|------------|-------------|-----------------------------|-------------------------------------------------------------|
+| rid        | INT         | PRIMARY KEY, AUTO_INCREMENT | 角色唯一标识                                                      |
+| type       | VARCHAR(20) | NOT NULL                    | 类型（game_expert=电竞明星 / esports_player=电竞选手 / game_hero=游戏英雄） |
+| name       | VARCHAR(80) | NOT NULL                    | 角色显示名                                                       |
+| created_at | DATETIME    | DEFAULT CURRENT_TIMESTAMP   | 创建时间                                                        |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP | 更新时间                                                        |
 
 ## RoleplayCharacterDetail 表 (roleplay_character_details)
 
-| 字段         | 类型          | 约束                                  | 说明                        |
-|------------|-------------|-------------------------------------|---------------------------|
-| rid        | INT         | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 角色唯一标识（关联 RoleplayCharacter） |
-| bio        | TEXT        | NULLABLE                            | 简介                        |
-| phrases    | TEXT        | NULLABLE                            | 名人名言/短语（JSON 数组）           |
-| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE    | 头像文件 ID                    |
-| images_id  | TEXT        | NULLABLE                            | 图片文件 ID 数组（JSON 数组）         |
-| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间                      |
+| 字段         | 类型       | 约束                                                | 说明                           |
+|------------|----------|---------------------------------------------------|------------------------------|
+| rid        | INT      | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 角色唯一标识（关联 RoleplayCharacter） |
+| bio        | TEXT     | NULLABLE                                          | 简介                           |
+| phrases    | TEXT     | NULLABLE                                          | 名人名言/短语（JSON 数组）             |
+| avatar_id  | INT      | FOREIGN KEY(files.fid), NULLABLE                  | 头像文件 ID                      |
+| images_id  | TEXT     | NULLABLE                                          | 图片文件 ID 数组（JSON 数组）          |
+| updated_at | DATETIME | ON UPDATE CURRENT_TIMESTAMP                       | 更新时间                         |
 
 ## RoleplaySession 表 (roleplay_sessions)
 
-| 字段         | 类型           | 约束                                  | 说明                        |
-|------------|--------------|-------------------------------------|---------------------------|
-| uid        | INT          | PRIMARY KEY, FOREIGN KEY(users.uid) | 关联 User 表                |
-| rid        | INT          | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 关联 RoleplayCharacter 表 |
-| created_at | DATETIME     | DEFAULT CURRENT_TIMESTAMP           | 创建时间                      |
-| updated_at | DATETIME     | ON UPDATE CURRENT_TIMESTAMP         | 更新时间                      |
+| 字段         | 类型       | 约束                                                | 说明                     |
+|------------|----------|---------------------------------------------------|------------------------|
+| uid        | INT      | PRIMARY KEY, FOREIGN KEY(users.uid)               | 关联 User 表              |
+| rid        | INT      | PRIMARY KEY, FOREIGN KEY(roleplay_characters.rid) | 关联 RoleplayCharacter 表 |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP                         | 创建时间                   |
+| updated_at | DATETIME | ON UPDATE CURRENT_TIMESTAMP                       | 更新时间                   |
 
 **唯一约束**：(uid, rid) 唯一确定一个会话
 
 ## RoleplayMessage 表 (roleplay_messages)
 
-| 字段         | 类型          | 约束                                               | 说明               |
-|------------|-------------|--------------------------------------------------|------------------|
-| mid        | INT         | PRIMARY KEY, AUTO_INCREMENT                      | 消息唯一标识           |
-| uid        | INT         | FOREIGN KEY(users.uid), NOT NULL                 | 关联 User 表         |
-| rid        | INT         | FOREIGN KEY(roleplay_characters.rid), NOT NULL   | 所属角色              |
-| role       | VARCHAR(20) | NOT NULL                                         | user / assistant |
-| content    | TEXT        | NOT NULL                                         | 消息内容             |
-| created_at | DATETIME    | DEFAULT CURRENT_TIMESTAMP                        | 创建时间             |
-| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP                      | 更新时间             |
+| 字段         | 类型          | 约束                                             | 说明               |
+|------------|-------------|------------------------------------------------|------------------|
+| mid        | INT         | PRIMARY KEY, AUTO_INCREMENT                    | 消息唯一标识           |
+| uid        | INT         | FOREIGN KEY(users.uid), NOT NULL               | 关联 User 表        |
+| rid        | INT         | FOREIGN KEY(roleplay_characters.rid), NOT NULL | 所属角色             |
+| role       | VARCHAR(20) | NOT NULL                                       | user / assistant |
+| content    | TEXT        | NOT NULL                                       | 消息内容             |
+| created_at | DATETIME    | DEFAULT CURRENT_TIMESTAMP                      | 创建时间             |
+| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP                    | 更新时间             |
 
 ## Roleplay 表关系
 

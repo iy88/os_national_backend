@@ -137,7 +137,8 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
         refresh_stream_producer_lock(sid)
 
         def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
-            for chunk in ai_provider.chat_stream(active_messages, sid=sid, resume=is_resume, session_id=active_session_id):
+            for chunk in ai_provider.chat_stream(active_messages, sid=sid, resume=is_resume,
+                                                 session_id=active_session_id):
                 append_stream_content(mid, chunk)
                 append_stream_event(mid, 'content', content=chunk)
                 refresh_stream_producer_lock(sid)

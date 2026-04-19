@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
 
 from models import db
-from models.admin import Admin, AdminInfo
+from models.admin import Admin
+from utils.file_utils import generate_file_token
 from utils.jwt_utils import generate_token, token_required
 from utils.password_utils import verify_password
-from utils.file_utils import generate_file_token
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 

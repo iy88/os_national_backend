@@ -10,12 +10,12 @@
 用法：python scripts/find_orphan_images.py
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import db, File, UserInfo, AdminInfo, RoleplayCharacterDetail
+from models import File, UserInfo, AdminInfo, RoleplayCharacterDetail
 import json
 
 
@@ -62,7 +62,8 @@ def find_orphan_images():
     if orphan_files:
         print("孤立文件列表:")
         for f in orphan_files:
-            print(f"  fid={f.fid} | original={f.original_filename} | secure={f.secure_filename} | created={f.created_at}")
+            print(
+                f"  fid={f.fid} | original={f.original_filename} | secure={f.secure_filename} | created={f.created_at}")
     else:
         print("未发现孤立文件")
 
@@ -71,5 +72,6 @@ def find_orphan_images():
 
 if __name__ == '__main__':
     from app import app
+
     with app.app_context():
         find_orphan_images()

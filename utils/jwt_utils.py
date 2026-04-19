@@ -26,6 +26,7 @@ def token_required(require_admin: bool = False):
     - @token_required()  (带括号，默认 require_admin=False)
     - @token_required(require_admin=True)  (带参数)
     """
+
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -42,6 +43,7 @@ def token_required(require_admin: bool = False):
             except Exception:
                 return jsonify({'success': False, 'message': 'Invalid token'}), 401
             return f(current_user_id, *args, **kwargs)
+
         return decorated
 
     # 支持 @token_required 不带括号的用法
