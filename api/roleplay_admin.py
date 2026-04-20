@@ -91,12 +91,14 @@ def create_character(_):
             avatar_file.seek(0, os.SEEK_END)
             avatar_size = avatar_file.tell()
             avatar_file.seek(0)
-            if avatar_size <= Config.MAX_AVATAR_SIZE:
-                secure_filename = save_avatar_file(avatar_file)
-                new_file = File(original_filename=avatar_file.filename, secure_filename=secure_filename)
-                db.session.add(new_file)
-                db.session.flush()
-                detail.avatar_id = new_file.fid
+            if avatar_size > Config.MAX_AVATAR_SIZE:
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+            secure_filename = save_avatar_file(avatar_file)
+            new_file = File(original_filename=avatar_file.filename, secure_filename=secure_filename)
+            db.session.add(new_file)
+            db.session.flush()
+            detail.avatar_id = new_file.fid
 
     # 处理图片上传
     if images_files:
@@ -106,12 +108,14 @@ def create_character(_):
                 file.seek(0, os.SEEK_END)
                 file_size = file.tell()
                 file.seek(0)
-                if file_size <= Config.MAX_AVATAR_SIZE:
-                    secure_filename = save_avatar_file(file)
-                    new_file = File(original_filename=file.filename, secure_filename=secure_filename)
-                    db.session.add(new_file)
-                    db.session.flush()
-                    new_fids.append(new_file.fid)
+                if file_size > Config.MAX_AVATAR_SIZE:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                secure_filename = save_avatar_file(file)
+                new_file = File(original_filename=file.filename, secure_filename=secure_filename)
+                db.session.add(new_file)
+                db.session.flush()
+                new_fids.append(new_file.fid)
         if new_fids:
             detail.images_id = _serialize_images_id(new_fids)
 
@@ -134,33 +138,6 @@ def create_character(_):
             'created_at': character.created_at.isoformat() + 'Z' if character.created_at else None
         }
     }), 201
-
-
-@roleplay_admin_bp.route('/<int:rid>/detail', methods=['GET'])
-@token_required(require_admin=True)
-def get_character_detail(_, rid):
-    """获取角色详情"""
-    character = RoleplayCharacter.query.get(rid)
-    if not character:
-        return jsonify({'success': False, 'message': 'Character not found'}), 404
-
-    detail = character.detail
-    images_id_list = _parse_images_id(detail.images_id) if detail else []
-
-    return jsonify({
-        'success': True,
-        'character': {
-            'rid': character.rid,
-            'type': character.type,
-            'name': character.name,
-            'bio': detail.bio if detail else None,
-            'phrases': json.loads(detail.phrases) if detail and detail.phrases else [],
-            'avatar_token': generate_file_token(detail.avatar_id) if detail and detail.avatar_id else None,
-            'images_token': [generate_file_token(fid) for fid in images_id_list],
-            'created_at': character.created_at.isoformat() + 'Z' if character.created_at else None,
-            'updated_at': detail.updated_at.isoformat() + 'Z' if detail and detail.updated_at else None
-        }
-    })
 
 
 @roleplay_admin_bp.route('/<int:rid>/update', methods=['PUT'])
@@ -225,14 +202,16 @@ def update_character(_, rid):
             avatar_file.seek(0, os.SEEK_END)
             avatar_size = avatar_file.tell()
             avatar_file.seek(0)
-            if avatar_size <= Config.MAX_AVATAR_SIZE:
-                if detail.avatar_id:
-                    _delete_file(detail.avatar_id)
-                secure_filename = save_avatar_file(avatar_file)
-                new_file = File(original_filename=avatar_file.filename, secure_filename=secure_filename)
-                db.session.add(new_file)
-                db.session.flush()
-                detail.avatar_id = new_file.fid
+            if avatar_size > Config.MAX_AVATAR_SIZE:
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+            if detail.avatar_id:
+                _delete_file(detail.avatar_id)
+            secure_filename = save_avatar_file(avatar_file)
+            new_file = File(original_filename=avatar_file.filename, secure_filename=secure_filename)
+            db.session.add(new_file)
+            db.session.flush()
+            detail.avatar_id = new_file.fid
 
     # 处理增量删除图片（通过 token）
     if delete_images_tokens:
@@ -257,12 +236,14 @@ def update_character(_, rid):
                 file.seek(0, os.SEEK_END)
                 file_size = file.tell()
                 file.seek(0)
-                if file_size <= Config.MAX_AVATAR_SIZE:
-                    secure_filename = save_avatar_file(file)
-                    new_file = File(original_filename=file.filename, secure_filename=secure_filename)
-                    db.session.add(new_file)
-                    db.session.flush()
-                    new_fids.append(new_file.fid)
+                if file_size > Config.MAX_AVATAR_SIZE:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                secure_filename = save_avatar_file(file)
+                new_file = File(original_filename=file.filename, secure_filename=secure_filename)
+                db.session.add(new_file)
+                db.session.flush()
+                new_fids.append(new_file.fid)
         if new_fids:
             all_fids = old_images + new_fids
             detail.images_id = _serialize_images_id(all_fids)

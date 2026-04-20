@@ -19,29 +19,28 @@
     - [10. 获取头像](#10-获取头像)
     - [11. 获取图片文件](#11-获取图片文件)
 - [Agent AI 接口](#agent-ai-接口)
-    - [11. 获取会话列表](#11-获取会话列表)
-    - [12. 获取会话详情](#12-获取会话详情)
-    - [13. 编辑会话标题](#13-编辑会话标题)
-    - [14. 发送消息（SSE 流式）](#14-发送消息sse-流式)
+    - [12. 获取会话列表](#12-获取会话列表)
+    - [13. 获取会话详情](#13-获取会话详情)
+    - [14. 编辑会话标题](#14-编辑会话标题)
+    - [15. 发送消息（SSE 流式）](#15-发送消息sse-流式)
 - [路线收藏接口](#路线收藏接口)
-    - [15. 获取收藏列表](#15-获取收藏列表)
-    - [16. 获取收藏详情](#16-获取收藏详情)
-    - [17. 收藏路线](#17-收藏路线)
-    - [18. 编辑收藏路线](#18-编辑收藏路线)
-    - [19. 删除收藏](#19-删除收藏)
+    - [16. 获取收藏列表](#16-获取收藏列表)
+    - [17. 获取收藏详情](#17-获取收藏详情)
+    - [18. 收藏路线](#18-收藏路线)
+    - [19. 编辑收藏路线](#19-编辑收藏路线)
+    - [20. 删除收藏](#20-删除收藏)
 - [Roleplay 角色扮演接口](#roleplay-角色扮演接口)
-    - [20. 获取角色列表](#20-获取角色列表)
-    - [21. 获取角色详情](#21-获取角色详情)
-    - [22. 发送消息（SSE 流式）](#22-发送消息sse-流式)
-    - [23. 获取对话列表](#23-获取对话列表)
+    - [21. 获取角色列表](#21-获取角色列表)
+    - [22. 获取角色详情](#22-获取角色详情)
+    - [23. 发送消息（SSE 流式）](#23-发送消息sse-流式)
+    - [24. 获取对话列表](#24-获取对话列表)
 - [Roleplay 管理员接口](#roleplay-管理员接口)
-    - [24. 创建角色](#24-创建角色)
-    - [25. 获取角色详情](#25-获取角色详情)
+    - [25. 创建角色](#25-创建角色)
     - [26. 更新角色](#26-更新角色)
     - [27. 删除角色](#27-删除角色)
     - [28. Dashboard 统计](#28-dashboard-统计)
 - [工具接口](#工具接口)
-    - [健康检查](#健康检查)
+    - [29. 健康检查](#29-健康检查)
 
 ## 用户认证
 
@@ -471,7 +470,7 @@ Content-Type: application/json
 
 **限制**:
 
-- 文件大小：最大 2MB
+- 文件大小：最大 2097152 字节（2MB）
 - 支持格式：png, jpg, jpeg, gif, webp
 
 **响应 (成功)**:
@@ -574,7 +573,7 @@ GET /file/image/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## Agent AI 接口
 
-### 11. 获取会话列表
+### 12. 获取会话列表
 
 - **URL**: `GET /agent/travel-route-plan/chat/list`
 - **描述**: 获取当前用户的所有 AI 对话会话列表
@@ -614,7 +613,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 9. 获取会话详情
+### 13. 获取会话详情
 
 - **URL**: `GET /agent/travel-route-plan/chat/detail/:sid`
 - **描述**: 获取指定会话的详细信息（含消息历史）
@@ -668,7 +667,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 10. 编辑会话标题
+### 14. 编辑会话标题
 
 - **URL**: `PUT /agent/travel-route-plan/chat/title/edit/:sid`
 - **描述**: 编辑指定会话的标题
@@ -722,7 +721,7 @@ Content-Type: application/json
 
 ---
 
-### 11. 发送消息（SSE 流式）
+### 15. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/travel-route-plan/message`
 - **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
@@ -829,7 +828,7 @@ data: {"type": "done", "sid": 1, "mid": 123}
 
 ## 路线收藏接口
 
-### 15. 获取收藏列表
+### 16. 获取收藏列表
 
 - **URL**: `GET /route/list`
 - **描述**: 获取当前用户收藏的所有路线
@@ -869,7 +868,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 16. 获取收藏详情
+### 17. 获取收藏详情
 
 - **URL**: `GET /route/detail/:rid`
 - **描述**: 获取指定收藏路线的详细信息
@@ -909,7 +908,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 17. 收藏路线
+### 18. 收藏路线
 
 - **URL**: `POST /route/favorite`
 - **描述**: 收藏 AI 返回的路线（只提供 mid，后端自动复制 session.title 和 message.content）
@@ -951,7 +950,7 @@ Content-Type: application/json
 
 ---
 
-### 18. 编辑收藏路线
+### 19. 编辑收藏路线
 
 - **URL**: `PUT /route/edit/:rid`
 - **描述**: 编辑收藏路线的标题或内容
@@ -1011,7 +1010,7 @@ Content-Type: application/json
 
 ---
 
-### 19. 删除收藏
+### 20. 删除收藏
 
 - **URL**: `DELETE /route/delete/:rid`
 - **描述**: 删除指定的收藏路线
@@ -1045,7 +1044,7 @@ Authorization: Bearer <token>
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
 | game_hero      | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴   |
 
-### 20. 获取角色列表
+### 21. 获取角色列表
 
 - **URL**: `GET /agent/roleplay/list/:type`
 - **描述**: 获取指定类型的角色列表（不含详情），支持分页和字段搜索
@@ -1125,7 +1124,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 21. 获取角色详情
+### 22. 获取角色详情
 
 - **URL**: `GET /agent/roleplay/detail/:rid`
 - **描述**: 获取角色的详细信息（含简介、名言短语等）
@@ -1186,7 +1185,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 22. 发送消息（SSE 流式）
+### 23. 发送消息（SSE 流式）
 
 - **URL**: `POST /agent/roleplay/message/send/:rid`
 - **描述**: 向角色发送消息，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
@@ -1263,7 +1262,7 @@ data: {"type": "done", "uid": 1, "rid": 1, "mid": 123}
 
 ---
 
-### 23. 获取对话列表
+### 24. 获取对话列表
 
 - **URL**: `GET /agent/roleplay/message/list/:rid`
 - **描述**: 获取与角色的所有对话记录（按时间升序）
@@ -1341,7 +1340,7 @@ Authorization: Bearer <token>
 | esports_player | 电竞选手 | 电竞比赛分析、游戏技术指导、战术讨论 |
 | game_hero      | 游戏英雄 | 角色扮演对话、剧情互动、虚拟陪伴   |
 
-### 24. 创建角色
+### 25. 创建角色
 
 - **URL**: `POST /admin/roleplay/create`
 - **描述**: 创建新角色，支持同时上传头像和图片（均为可选）
@@ -1382,10 +1381,8 @@ Authorization: Bearer <token>
 
 **限制**:
 
-- 文件大小：最大 2MB
+- 文件大小：最大 2097152 字节（2MB）
 - 支持格式：png, jpg, jpeg, gif, webp
-  | bio | string | 否 | 角色简介 |
-  | phrases | string[] | 否 | 名言/短语数组 |
 
 **响应 (成功 - 201)**:
 
@@ -1418,73 +1415,12 @@ Authorization: Bearer <token>
 }
 ```
 
-**响应 (失败 - 403)**:
+**响应 (失败 - 400，文件过大)**:
 
 ```json
 {
   "success": false,
-  "message": "Admin access required"
-}
-```
-
----
-
-### 25. 获取角色详情
-
-- **URL**: `GET /admin/roleplay/<int:rid>/detail`
-- **描述**: 获取角色的详细信息（含简介、名言短语、头像、图片等）
-- **认证**: 需要 Bearer Token（admin role）
-
-**请求**:
-
-```
-GET /admin/roleplay/1/detail
-Authorization: Bearer <token>
-```
-
-**响应 (成功)**:
-
-```json
-{
-  "success": true,
-  "character": {
-    "rid": 1,
-    "type": "game_expert",
-    "name": "电竞明星小王",
-    "bio": "10年游戏经验，专注RPG和策略游戏",
-    "phrases": [
-      "游戏最重要的是体验过程",
-      "适度娱乐，沉迷伤身"
-    ],
-    "avatar_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "images_token": [
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    ],
-    "created_at": "2026-03-27T09:00:00Z",
-    "updated_at": "2026-03-27T10:00:00Z"
-  }
-}
-```
-
-| 字段           | 类型       | 说明               |
-|--------------|----------|------------------|
-| rid          | int      | 角色唯一标识           |
-| type         | string   | 角色类型             |
-| name         | string   | 角色显示名            |
-| bio          | string   | 角色简介             |
-| phrases      | string[] | 名言/短语数组          |
-| avatar_token | string   | 头像 Token（JWT）    |
-| images_token | string[] | 图片 Token 数组（JWT） |
-| created_at   | datetime | 创建时间             |
-| updated_at   | datetime | 详情更新时间           |
-
-**响应 (失败 - 404)**:
-
-```json
-{
-  "success": false,
-  "message": "Character not found"
+  "message": "Avatar file too large, max size is 2097152 bytes"
 }
 ```
 
@@ -1575,6 +1511,24 @@ Authorization: Bearer <token>
 {
   "success": false,
   "message": "Character not found"
+}
+```
+
+**响应 (失败 - 400，文件过大)**:
+
+```json
+{
+  "success": false,
+  "message": "Avatar file too large, max size is 2097152 bytes"
+}
+```
+
+或
+
+```json
+{
+  "success": false,
+  "message": "Image file too large, max size is 2097152 bytes"
 }
 ```
 
@@ -1716,3 +1670,16 @@ Authorization: Bearer <token>
 ---
 
 ## 工具接口
+
+### 29. 健康检查
+
+- **URL**: `GET /health`
+- **描述**: 服务健康检查
+
+**响应**:
+
+```json
+{
+  "status": "ok"
+}
+```

@@ -17,6 +17,7 @@ VERIFICATION_CODE_EXPIRE = 300  # 5 minutes
 STREAM_MESSAGE_TTL = 3600  # 1 hour
 AI_SESSION_TTL = 3600  # 1 hour
 STREAM_EVENT_MAXLEN = 10000
+TOKEN_VALID_SINCE_KEY = 'jwt:token_valid_since'  # 最早有效 token 时间戳
 
 
 def set_verification_code(email: str, code: str):
@@ -334,3 +335,19 @@ def set_rp_ai_session_id(uid: int, rid: int, ai_session_id: str):
 def clear_rp_ai_session_id(uid: int, rid: int):
     """清除角色对话绑定的 AI session_id。"""
     redis_client.delete(_rp_stream_key(uid, rid, 'ai_session'))
+
+
+# ============ Token 失效机制 ============
+
+def get_token_valid_since() -> float | None:
+    """获取最早有效 token 时间戳（秒），None 表示无限制"""
+    val = redis_client.get(TOKEN_VALID_SINCE_KEY)
+    return float(val) if val else None
+
+
+def set_token_valid_since(timestamp: float | None):
+    """设置最早有效 token 时间戳（秒），None 表示清除限制"""
+    if timestamp is None:
+        redis_client.delete(TOKEN_VALID_SINCE_KEY)
+    else:
+        redis_client.set(TOKEN_VALID_SINCE_KEY, str(timestamp))

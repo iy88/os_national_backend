@@ -5,15 +5,42 @@ from functools import wraps
 import jwt
 from flask import request, jsonify
 
+from utils.redis_client import get_token_valid_since, set_token_valid_since
+
 
 def generate_token(user_id: int, role: str = 'user') -> str:
+    now = datetime.now(timezone.utc)
     payload = {
         'user_id': user_id,
         'role': role,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
-        'iat': datetime.now(timezone.utc)
+        'exp': now + timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
+        'iat': now
     }
     return jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm=os.getenv('JWT_ALGORITHM', 'HS256'))
+
+
+def decode_token(token: str) -> dict:
+    # 懒加载：首次解码时确保 token_valid_since 已设置（服务启动时间）
+    _ensure_token_valid_since()
+
+    payload = jwt.decode(token, os.getenv('JWT_SECRET'), algorithms=[os.getenv('JWT_ALGORITHM', 'HS256')])
+
+    # 检查 token 是否在最早有效时间之后
+    valid_since = get_token_valid_since()
+    if valid_since is not None:
+        iat = payload.get('iat')
+        if iat and iat < valid_since:
+            raise Exception('Token expired by security policy')
+
+    return payload
+
+
+def _ensure_token_valid_since():
+    """确保 token_valid_since 已设置（服务启动时或首次使用时）"""
+    valid_since = get_token_valid_since()
+    if valid_since is None:
+        # 服务启动时默认设置当前时间为最早有效时间
+        set_token_valid_since(datetime.now(timezone.utc).timestamp())
 
 
 def token_required(require_admin: bool = False):
@@ -54,7 +81,3 @@ def token_required(require_admin: bool = False):
         return decorator(f)
 
     return decorator
-
-
-def decode_token(token: str) -> dict:
-    return jwt.decode(token, os.getenv('JWT_SECRET'), algorithms=[os.getenv('JWT_ALGORITHM', 'HS256')])
