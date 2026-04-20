@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import File, UserInfo, AdminInfo, RoleplayCharacterDetail
+from models import File, UserInfo, RoleplayCharacterDetail
 import json
 
 
@@ -25,11 +25,6 @@ def find_orphan_images():
 
     # 1. user_info.avatar_id
     for row in UserInfo.query.all():
-        if row.avatar_id:
-            referenced_fids.add(row.avatar_id)
-
-    # 2. admin_info.avatar_id
-    for row in AdminInfo.query.all():
         if row.avatar_id:
             referenced_fids.add(row.avatar_id)
 
