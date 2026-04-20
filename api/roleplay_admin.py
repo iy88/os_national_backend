@@ -93,7 +93,8 @@ def create_character(_):
             avatar_file.seek(0)
             if avatar_size > Config.MAX_AVATAR_SIZE:
                 db.session.rollback()
-                return jsonify({'success': False, 'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                return jsonify({'success': False,
+                                'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
             secure_filename = save_avatar_file(avatar_file)
             new_file = File(original_filename=avatar_file.filename, secure_filename=secure_filename)
             db.session.add(new_file)
@@ -110,7 +111,8 @@ def create_character(_):
                 file.seek(0)
                 if file_size > Config.MAX_AVATAR_SIZE:
                     db.session.rollback()
-                    return jsonify({'success': False, 'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                    return jsonify({'success': False,
+                                    'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
                 secure_filename = save_avatar_file(file)
                 new_file = File(original_filename=file.filename, secure_filename=secure_filename)
                 db.session.add(new_file)
@@ -204,7 +206,8 @@ def update_character(_, rid):
             avatar_file.seek(0)
             if avatar_size > Config.MAX_AVATAR_SIZE:
                 db.session.rollback()
-                return jsonify({'success': False, 'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                return jsonify({'success': False,
+                                'message': f'Avatar file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
             if detail.avatar_id:
                 _delete_file(detail.avatar_id)
             secure_filename = save_avatar_file(avatar_file)
@@ -238,7 +241,8 @@ def update_character(_, rid):
                 file.seek(0)
                 if file_size > Config.MAX_AVATAR_SIZE:
                     db.session.rollback()
-                    return jsonify({'success': False, 'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
+                    return jsonify({'success': False,
+                                    'message': f'Image file too large, max size is {Config.MAX_AVATAR_SIZE} bytes'}), 400
                 secure_filename = save_avatar_file(file)
                 new_file = File(original_filename=file.filename, secure_filename=secure_filename)
                 db.session.add(new_file)

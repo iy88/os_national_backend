@@ -25,10 +25,10 @@
 
 ## Admin 表 (admins)
 
-| 字段       | 类型           | 约束                                      | 说明     |
-|----------|--------------|-----------------------------------------|--------|
-| uid      | INT          | PRIMARY KEY, FOREIGN KEY(users.uid)      | 关联 User |
-| created_at | DATETIME   | DEFAULT CURRENT_TIMESTAMP                | 创建时间   |
+| 字段         | 类型       | 约束                                  | 说明      |
+|------------|----------|-------------------------------------|---------|
+| uid        | INT      | PRIMARY KEY, FOREIGN KEY(users.uid) | 关联 User |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP           | 创建时间    |
 
 **说明**：仅存储哪些用户是管理员，不存储密码（密码在 User 表）。
 
