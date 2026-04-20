@@ -25,26 +25,12 @@
 
 ## Admin 表 (admins)
 
-| 字段            | 类型           | 约束                          | 说明            |
-|---------------|--------------|-----------------------------|---------------|
-| aid           | INT          | PRIMARY KEY, AUTO_INCREMENT | 管理员唯一标识       |
-| username      | VARCHAR(80)  | UNIQUE, NOT NULL            | 管理员用户名        |
-| email         | VARCHAR(120) | UNIQUE, NOT NULL            | 管理员邮箱         |
-| password_hash | VARCHAR(256) | NOT NULL                    | 密码（bcrypt 加密） |
-| created_at    | DATETIME     | DEFAULT CURRENT_TIMESTAMP   | 创建时间          |
-| updated_at    | DATETIME     | ON UPDATE CURRENT_TIMESTAMP | 更新时间          |
+| 字段       | 类型           | 约束                                      | 说明     |
+|----------|--------------|-----------------------------------------|--------|
+| uid      | INT          | PRIMARY KEY, FOREIGN KEY(users.uid)      | 关联 User |
+| created_at | DATETIME   | DEFAULT CURRENT_TIMESTAMP                | 创建时间   |
 
-## AdminInfo 表 (admin_info)
-
-| 字段         | 类型          | 约束                                   | 说明         |
-|------------|-------------|--------------------------------------|------------|
-| aid        | INT         | PRIMARY KEY, FOREIGN KEY(admins.aid) | 关联 Admin 表 |
-| avatar_id  | INT         | FOREIGN KEY(files.fid), NULLABLE     | 头像文件 ID    |
-| gender     | VARCHAR(10) | NULLABLE                             | 性别         |
-| age        | INT         | NULLABLE                             | 年龄         |
-| basic_info | TEXT        | NULLABLE                             | 基本信息       |
-| bio        | TEXT        | NULLABLE                             | 简介         |
-| updated_at | DATETIME    | ON UPDATE CURRENT_TIMESTAMP          | 更新时间       |
+**说明**：仅存储哪些用户是管理员，不存储密码（密码在 User 表）。
 
 ## File 表 (files)
 
@@ -60,8 +46,6 @@
 
 - `UserInfo.uid` 外键关联 `User.uid` (ON DELETE CASCADE)，一对一关系，注册时自动创建
 - `UserInfo.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示用户头像
-- `AdminInfo.aid` 外键关联 `Admin.aid` (ON DELETE CASCADE)，一对一关系，管理员注册时自动创建
-- `AdminInfo.avatar_id` 外键关联 `File.fid` (ON DELETE SET NULL)，表示管理员头像
 - File 表不再与 User 绑定，改为纯文件存储（供用户头像、角色头像等使用）
 
 ## ConversationSession 表 (conversation_sessions)

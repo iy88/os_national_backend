@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from models import db
 from models.admin import Admin
+from models.user import User, UserInfo
 from utils.file_utils import generate_file_token
 from utils.jwt_utils import generate_token, token_required
 from utils.password_utils import verify_password
@@ -11,6 +12,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @admin_bp.route('/login', methods=['POST'])
 def login():
+    """管理员登录：先验证用户，再检查是否在 admins 表中"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': 'Invalid JSON'}), 400
@@ -21,69 +23,79 @@ def login():
     if not username_or_email or not password:
         return jsonify({'success': False, 'message': 'Missing username/email or password'}), 400
 
-    admin = Admin.query.filter(
-        (Admin.username == username_or_email) | (Admin.email == username_or_email)
+    # 1. 查找用户
+    user = User.query.filter(
+        (User.username == username_or_email) | (User.email == username_or_email)
     ).first()
 
-    if not admin or not verify_password(password, admin.password_hash):
+    if not user or not verify_password(password, user.password_hash):
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
 
-    token = generate_token(admin.aid, role='admin')
+    # 2. 检查是否在 admins 表中
+    if not Admin.query.get(user.uid):
+        return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+
+    # 3. 生成 admin token
+    token = generate_token(user.uid, role='admin')
 
     avatar_token = None
-    if admin.admin_info and admin.admin_info.avatar_id:
-        avatar_token = generate_file_token(admin.admin_info.avatar_id)
+    if user.user_info and user.user_info.avatar_id:
+        avatar_token = generate_file_token(user.user_info.avatar_id)
 
     return jsonify({
         'success': True,
         'token': token,
-        'adminInfo': {
-            'aid': admin.aid,
-            'username': admin.username,
-            'email': admin.email,
+        'userInfo': {
+            'uid': user.uid,
+            'username': user.username,
+            'email': user.email,
             'avatarToken': avatar_token
         }
     })
 
 
 @admin_bp.route('/profile', methods=['GET'])
-@token_required
+@token_required(require_admin=True)
 def get_profile(current_user_id):
     """获取当前管理员信息"""
-    admin = Admin.query.get(current_user_id)
-    if not admin:
-        return jsonify({'success': False, 'message': 'Admin not found'}), 404
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    user_info = UserInfo.query.get(current_user_id)
 
     avatar_token = None
-    if admin.admin_info and admin.admin_info.avatar_id:
-        avatar_token = generate_file_token(admin.admin_info.avatar_id)
+    if user_info and user_info.avatar_id:
+        avatar_token = generate_file_token(user_info.avatar_id)
 
     return jsonify({
         'success': True,
-        'adminInfo': {
-            'aid': admin.aid,
-            'username': admin.username,
-            'email': admin.email,
-            'gender': admin.admin_info.gender if admin.admin_info else None,
-            'age': admin.admin_info.age if admin.admin_info else None,
-            'basicInfo': admin.admin_info.basic_info if admin.admin_info else None,
-            'bio': admin.admin_info.bio if admin.admin_info else None,
+        'userInfo': {
+            'uid': user.uid,
+            'username': user.username,
+            'email': user.email,
+            'gender': user_info.gender if user_info else None,
+            'age': user_info.age if user_info else None,
+            'basicInfo': user_info.basic_info if user_info else None,
+            'bio': user_info.bio if user_info else None,
             'avatarToken': avatar_token
         }
     })
 
 
 @admin_bp.route('/profile', methods=['PUT'])
-@token_required
+@token_required(require_admin=True)
 def update_profile(current_user_id):
     """批量（增量）更新当前管理员信息，字段均可选"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': 'Invalid JSON'}), 400
 
-    admin = Admin.query.get(current_user_id)
-    if not admin:
-        return jsonify({'success': False, 'message': 'Admin not found'}), 404
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    user_info = UserInfo.query.get(current_user_id)
 
     # 可更新的字段
     username = data.get('username')
@@ -96,32 +108,40 @@ def update_profile(current_user_id):
     if username is not None:
         if len(username) < 3 or len(username) > 80:
             return jsonify({'success': False, 'message': 'Username must be 3-80 characters'}), 400
-        if username != admin.username and Admin.query.filter_by(username=username).first():
+        if username != user.username and User.query.filter_by(username=username).first():
             return jsonify({'success': False, 'message': 'Username already exists'}), 409
-        admin.username = username
+        user.username = username
 
-    # 更新管理员信息
-    if admin.admin_info:
+    # 更新用户信息
+    if user_info:
         if gender is not None:
-            admin.admin_info.gender = gender
+            user_info.gender = gender
         if age is not None:
-            admin.admin_info.age = age
+            user_info.age = age
         if basic_info is not None:
-            admin.admin_info.basic_info = basic_info
+            user_info.basic_info = basic_info
         if bio is not None:
-            admin.admin_info.bio = bio
+            user_info.bio = bio
     db.session.commit()
+
+    # 重新获取最新数据
+    user = User.query.get(current_user_id)
+    user_info = UserInfo.query.get(current_user_id)
+    avatar_token = None
+    if user_info and user_info.avatar_id:
+        avatar_token = generate_file_token(user_info.avatar_id)
 
     return jsonify({
         'success': True,
         'message': 'Profile updated',
-        'adminInfo': {
-            'aid': admin.aid,
-            'username': admin.username,
-            'email': admin.email,
-            'gender': admin.admin_info.gender if admin.admin_info else None,
-            'age': admin.admin_info.age if admin.admin_info else None,
-            'basicInfo': admin.admin_info.basic_info if admin.admin_info else None,
-            'bio': admin.admin_info.bio if admin.admin_info else None
+        'userInfo': {
+            'uid': user.uid,
+            'username': user.username,
+            'email': user.email,
+            'gender': user_info.gender if user_info else None,
+            'age': user_info.age if user_info else None,
+            'basicInfo': user_info.basic_info if user_info else None,
+            'bio': user_info.bio if user_info else None,
+            'avatarToken': avatar_token
         }
     })

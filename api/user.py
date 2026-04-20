@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from models import db
+from models.admin import Admin
 from models.user import User, UserInfo
 from utils.email_utils import is_valid_email
 from utils.file_utils import generate_file_token
@@ -30,7 +31,8 @@ def login():
     if not user or not verify_password(password, user.password_hash):
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
 
-    token = generate_token(user.uid)
+    is_admin = Admin.query.get(user.uid) is not None
+    token = generate_token(user.uid, role='admin' if is_admin else 'user')
 
     avatar_token = None
     if user.user_info and user.user_info.avatar_id:
@@ -43,6 +45,7 @@ def login():
             'uid': user.uid,
             'username': user.username,
             'email': user.email,
+            'role': 'admin' if is_admin else 'user',
             'avatarToken': avatar_token
         }
     })

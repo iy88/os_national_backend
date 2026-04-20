@@ -6,7 +6,7 @@ from models.user import User, UserInfo, File
 from models.conversation import ConversationSession, Message
 from models.route import Route
 from models.roleplay import RoleplayCharacter, RoleplayCharacterDetail, RoleplaySession, RoleplayMessage
-from models.admin import Admin, AdminInfo
+from models.admin import Admin
 
 __all__ = [
     'db',
@@ -14,5 +14,5 @@ __all__ = [
     'ConversationSession', 'Message',
     'Route',
     'RoleplayCharacter', 'RoleplayCharacterDetail', 'RoleplaySession', 'RoleplayMessage',
-    'Admin', 'AdminInfo',
+    'Admin',
 ]

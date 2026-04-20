@@ -208,9 +208,11 @@
 {
   "success": true,
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "adminInfo": {
-    "aid": 1,
-    "username": "admin"
+  "userInfo": {
+    "uid": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "avatarToken": "eyJ..."
   }
 }
 ```
@@ -362,9 +364,15 @@ Authorization: Bearer <token>
 ```json
 {
   "success": true,
-  "adminInfo": {
-    "aid": 1,
-    "username": "admin"
+  "userInfo": {
+    "uid": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "gender": "male",
+    "age": 30,
+    "basicInfo": "...",
+    "bio": "...",
+    "avatarToken": "eyJ..."
   }
 }
 ```
@@ -417,9 +425,15 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Profile updated",
-  "adminInfo": {
-    "aid": 1,
-    "username": "new_admin_username"
+  "userInfo": {
+    "uid": 1,
+    "username": "new_admin_username",
+    "email": "admin@example.com",
+    "gender": "male",
+    "age": 30,
+    "basicInfo": "...",
+    "bio": "...",
+    "avatarToken": "eyJ..."
   }
 }
 ```
