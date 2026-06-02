@@ -31,6 +31,9 @@ from utils.redis_client import (
     get_rp_ai_session_id,
     set_rp_ai_session_id,
     clear_rp_ai_session_id,
+    try_acquire_regen_lock,
+    release_regen_lock,
+    refresh_regen_lock,
 )
 
 SSE_CONNECT_TIMEOUT_SECONDS = 120
@@ -143,7 +146,8 @@ def _run_stream_producer(
         base_messages: list,
         app_id: str,
         ai_session_id: str | None = None,
-        fallback_messages: list | None = None
+        fallback_messages: list | None = None,
+        regenerate_mid: int | None = None
 ):
     """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件"""
     with app.app_context():
@@ -155,6 +159,8 @@ def _run_stream_producer(
 
         set_rp_stream_state(mid, 'running')
         refresh_rp_stream_producer_lock(uid, rid)
+        if regenerate_mid is not None:
+            refresh_regen_lock(regenerate_mid)
 
         def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
             for chunk in ai_provider.chat_stream(active_messages, sid=mid, resume=is_resume,
@@ -162,6 +168,8 @@ def _run_stream_producer(
                 append_rp_stream_content(mid, chunk)
                 append_rp_stream_event(mid, 'content', content=chunk)
                 refresh_rp_stream_producer_lock(uid, rid)
+                if regenerate_mid is not None:
+                    refresh_regen_lock(regenerate_mid)
 
         try:
             try:
@@ -217,6 +225,8 @@ def _run_stream_producer(
                 print(f"Clear roleplay stream marker failed uid={uid}, rid={rid}, mid={mid}: {cleanup_err}")
             finally:
                 release_rp_stream_producer_lock(uid, rid)
+                if regenerate_mid is not None:
+                    release_regen_lock(regenerate_mid)
 
 
 def _ensure_stream_producer(
@@ -227,7 +237,8 @@ def _ensure_stream_producer(
         messages: list,
         app_id: str,
         ai_session_id: str | None = None,
-        fallback_messages: list | None = None
+        fallback_messages: list | None = None,
+        regenerate_mid: int | None = None
 ):
     """确保同一个 uid/rid/mid 只有一个生产者"""
     lock_mid = get_rp_stream_producer_lock(uid, rid)
@@ -239,7 +250,7 @@ def _ensure_stream_producer(
 
     producer = threading.Thread(
         target=_run_stream_producer,
-        args=(app, uid, rid, mid, messages, app_id, ai_session_id, fallback_messages),
+        args=(app, uid, rid, mid, messages, app_id, ai_session_id, fallback_messages, regenerate_mid),
         daemon=True
     )
     producer.start()
@@ -459,44 +470,58 @@ def send_message(current_user_id, rid):
         if not old_msg:
             return jsonify({'success': False, 'message': 'Message not found or not assistant'}), 404
 
-        # 2. 删除旧的 assistant 消息，立即 commit 避免后续异常导致删除失效
-        db.session.delete(old_msg)
-        db.session.commit()
+        # 2. 抢占 per-mid 重新生成锁，防止同一条消息并发重新生成
+        if not try_acquire_regen_lock(regenerate_mid):
+            return jsonify({
+                'success': False,
+                'message': '该消息正在重新生成中，请稍候再试',
+                'code': 'REGENERATE_IN_PROGRESS'
+            }), 409
 
-        # 3. 创建新的 assistant 占位
-        assistant_msg = RoleplayMessage(uid=current_user_id, rid=rid, role='assistant', content='')
-        session = RoleplaySession.query.filter_by(uid=current_user_id, rid=rid).first()
-        if not session:
-            session = RoleplaySession(uid=current_user_id, rid=rid)
-            db.session.add(session)
+        try:
+            # 3. 删除旧的 assistant 消息，立即 commit 避免后续异常导致删除失效
+            db.session.delete(old_msg)
+            db.session.commit()
+
+            # 4. 创建新的 assistant 占位
+            assistant_msg = RoleplayMessage(uid=current_user_id, rid=rid, role='assistant', content='')
+            session = RoleplaySession.query.filter_by(uid=current_user_id, rid=rid).first()
+            if not session:
+                session = RoleplaySession(uid=current_user_id, rid=rid)
+                db.session.add(session)
+                db.session.flush()
+            session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            db.session.add(assistant_msg)
             db.session.flush()
-        session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        db.session.add(assistant_msg)
-        db.session.flush()
-        assistant_mid = assistant_msg.mid
-        db.session.commit()
+            assistant_mid = assistant_msg.mid
+            db.session.commit()
 
-        # 4. 构建完整消息列表（排除新 assistant 占位），prepend system prompt
-        messages = [{"role": "system", "content": system_prompt}] + _build_messages(
-            current_user_id,
-            rid,
-            exclude_mid=assistant_mid
-        )
+            # 5. 构建完整消息列表（排除新 assistant 占位），prepend system prompt
+            messages = [{"role": "system", "content": system_prompt}] + _build_messages(
+                current_user_id,
+                rid,
+                exclude_mid=assistant_mid
+            )
 
-        set_rp_stream_mid(current_user_id, rid, assistant_mid)
-        init_rp_stream_runtime(assistant_mid)
-        _ensure_stream_producer(
-            app_obj,
-            current_user_id,
-            rid,
-            assistant_mid,
-            messages,
-            app_id,
-            ai_session_id=None,
-            fallback_messages=None
-        )
+            set_rp_stream_mid(current_user_id, rid, assistant_mid)
+            init_rp_stream_runtime(assistant_mid)
+            _ensure_stream_producer(
+                app_obj,
+                current_user_id,
+                rid,
+                assistant_mid,
+                messages,
+                app_id,
+                ai_session_id=None,
+                fallback_messages=None,
+                regenerate_mid=regenerate_mid
+            )
 
-        return sse_response(lambda: _consume_stream_events(current_user_id, rid, assistant_mid, resume=False))
+            return sse_response(lambda: _consume_stream_events(current_user_id, rid, assistant_mid, resume=False))
+        except Exception:
+            # 兜底：handler 阶段异常时立即释放锁，避免永久卡死
+            release_regen_lock(regenerate_mid)
+            raise
 
     # 检查是否有进行中的流（恢复模式）
     existing_mid = get_rp_stream_mid(current_user_id, rid)

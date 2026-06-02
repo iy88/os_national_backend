@@ -170,6 +170,21 @@ def release_stream_producer_lock(sid: int):
     redis_client.delete(f'stream_producer:{sid}')
 
 
+def try_acquire_regen_lock(mid: int, ttl: int = STREAM_MESSAGE_TTL) -> bool:
+    """抢占 per-mid 重新生成锁，防止同一消息的并发重新生成请求。"""
+    return bool(redis_client.set(f'regen_inflight:{mid}', '1', nx=True, ex=ttl))
+
+
+def release_regen_lock(mid: int):
+    """释放 per-mid 重新生成锁。"""
+    redis_client.delete(f'regen_inflight:{mid}')
+
+
+def refresh_regen_lock(mid: int, ttl: int = STREAM_MESSAGE_TTL):
+    """续期 per-mid 重新生成锁。"""
+    redis_client.expire(f'regen_inflight:{mid}', ttl)
+
+
 def get_ai_session_id(sid: int) -> str | None:
     """获取会话绑定的 AI session_id"""
     return redis_client.get(f'ai_session:{sid}')

@@ -30,6 +30,9 @@ from utils.redis_client import (
     get_ai_session_id,
     set_ai_session_id,
     clear_ai_session_id,
+    try_acquire_regen_lock,
+    release_regen_lock,
+    refresh_regen_lock,
 )
 
 SSE_CONNECT_TIMEOUT_SECONDS = 120
@@ -124,7 +127,7 @@ def _finalize_error_result(sid: int, mid: int, current_user_id: int, err: Except
     set_stream_state(mid, 'error', message=error_content)
 
 
-def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_messages: list, ai_session_id: str | None):
+def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_messages: list, ai_session_id: str | None, regenerate_mid: int | None = None):
     """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件。"""
     with app.app_context():
         ai_provider = get_ai_provider(
@@ -135,6 +138,8 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
 
         set_stream_state(mid, 'running')
         refresh_stream_producer_lock(sid)
+        if regenerate_mid is not None:
+            refresh_regen_lock(regenerate_mid)
 
         def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
             for chunk in ai_provider.chat_stream(active_messages, sid=sid, resume=is_resume,
@@ -142,6 +147,8 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
                 append_stream_content(mid, chunk)
                 append_stream_event(mid, 'content', content=chunk)
                 refresh_stream_producer_lock(sid)
+                if regenerate_mid is not None:
+                    refresh_regen_lock(regenerate_mid)
 
         try:
             # 1) 先做文本生成。若生成失败，错误消息落盘并结束。
@@ -211,9 +218,11 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
         finally:
             clear_stream_marker(sid)
             release_stream_producer_lock(sid)
+            if regenerate_mid is not None:
+                release_regen_lock(regenerate_mid)
 
 
-def _ensure_stream_producer(app, sid: int, mid: int, current_user_id: int, messages: list, ai_session_id: str | None):
+def _ensure_stream_producer(app, sid: int, mid: int, current_user_id: int, messages: list, ai_session_id: str | None, regenerate_mid: int | None = None):
     """确保同一个 sid/mid 只有一个生产者。"""
     lock_mid = get_stream_producer_lock(sid)
     if lock_mid == str(mid):
@@ -224,7 +233,7 @@ def _ensure_stream_producer(app, sid: int, mid: int, current_user_id: int, messa
 
     producer = threading.Thread(
         target=_run_stream_producer,
-        args=(app, sid, mid, current_user_id, messages, ai_session_id),
+        args=(app, sid, mid, current_user_id, messages, ai_session_id, regenerate_mid),
         daemon=True
     )
     producer.start()
@@ -438,28 +447,44 @@ def send_message(current_user_id):
         if not old_msg:
             return jsonify({'success': False, 'message': 'Message not found or not assistant'}), 404
 
-        # 2. 删除旧的 assistant 消息，立即 commit 避免后续异常导致删除失效
-        db.session.delete(old_msg)
-        db.session.commit()
+        # 2. 抢占 per-mid 重新生成锁，防止同一条消息并发重新生成
+        if not try_acquire_regen_lock(regenerate_mid):
+            return jsonify({
+                'success': False,
+                'message': '该消息正在重新生成中，请稍候再试',
+                'code': 'REGENERATE_IN_PROGRESS'
+            }), 409
 
-        # 3. 创建新的 assistant 占位
-        assistant_msg = Message(sid=sid, role='assistant', content='')
-        session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        db.session.add(assistant_msg)
-        db.session.flush()
-        assistant_mid = assistant_msg.mid
-        db.session.commit()
+        try:
+            # 3. 删除旧的 assistant 消息，立即 commit 避免后续异常导致删除失效
+            db.session.delete(old_msg)
+            db.session.commit()
 
-        # 4. 从数据库构建完整消息列表（排除新 assistant 占位），强制不使用 session_id
-        messages = build_messages(sid, exclude_mid=assistant_mid)
+            # 4. 创建新的 assistant 占位
+            assistant_msg = Message(sid=sid, role='assistant', content='')
+            session.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            db.session.add(assistant_msg)
+            db.session.flush()
+            assistant_mid = assistant_msg.mid
+            db.session.commit()
 
-        # noinspection PyUnresolvedReferences,PyProtectedMember
-        app_obj = current_app._get_current_object()
-        set_stream_mid(sid, assistant_mid)
-        init_stream_runtime(assistant_mid)
-        _ensure_stream_producer(app_obj, sid, assistant_mid, current_user_id, messages, ai_session_id=None)
+            # 5. 从数据库构建完整消息列表（排除新 assistant 占位），强制不使用 session_id
+            messages = build_messages(sid, exclude_mid=assistant_mid)
 
-        return sse_response(lambda: _consume_stream_events(sid, assistant_mid, resume=False))
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            app_obj = current_app._get_current_object()
+            set_stream_mid(sid, assistant_mid)
+            init_stream_runtime(assistant_mid)
+            _ensure_stream_producer(
+                app_obj, sid, assistant_mid, current_user_id, messages,
+                ai_session_id=None, regenerate_mid=regenerate_mid
+            )
+
+            return sse_response(lambda: _consume_stream_events(sid, assistant_mid, resume=False))
+        except Exception:
+            # 兜底：handler 阶段异常时立即释放锁，避免永久卡死
+            release_regen_lock(regenerate_mid)
+            raise
 
     # ========== 正常发送模式 ==========
     # noinspection PyUnresolvedReferences,PyProtectedMember
