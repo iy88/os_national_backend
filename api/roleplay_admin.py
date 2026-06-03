@@ -13,7 +13,7 @@ from utils.file_utils import (
 )
 from utils.jwt_utils import token_required
 
-roleplay_admin_bp = Blueprint('roleplay_admin', __name__, url_prefix='/admin/roleplay')
+roleplay_admin_bp = Blueprint('roleplay_admin', __name__, url_prefix='/api/admin/roleplay')
 
 
 def _delete_file(fid: int):

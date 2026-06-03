@@ -6,7 +6,7 @@ from sqlalchemy import func, text
 from models import db, User, File, ConversationSession, Message, Route, RoleplayCharacter, RoleplayMessage
 from utils.jwt_utils import token_required
 
-dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/admin/dashboard')
+dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/admin/dashboard')
 
 
 @dashboard_bp.route('', methods=['GET'])

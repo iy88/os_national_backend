@@ -1,6 +1,7 @@
 import random
 import re
 import smtplib
+# from datetime import datetime
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -18,6 +19,46 @@ def is_valid_email(email: str) -> bool:
 
 def generate_verification_code() -> str:
     return str(random.randint(100000, 999999))
+
+
+# def send_login_alert(email: str, username: str):
+#     """ tester 登录时邮件告警"""
+#     msg = MIMEMultipart('alternative')
+#     msg['Subject'] = '【城竞共生】 Tester 登录告警'
+#     sender = current_app.config['SMTP_SENDER']
+#     sender_name = current_app.config.get('SMTP_SENDER_NAME', '城竞共生')
+#     msg['From'] = formataddr((Header(sender_name, 'utf-8').encode(), sender))
+#     msg['To'] = 'REDACTED_EMAIL'
+#
+#     html_content = f'''
+#     <html>
+#     <body>
+#         <h2>Tester 登录告警</h2>
+#         <p>用户 <strong>{username}</strong> (email: {email}) 已登录系统。</p>
+#         <p>登录时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+#     </body>
+#     </html>
+#     '''
+#     msg.attach(MIMEText(html_content, 'html'))
+#
+#     try:
+#         if current_app.config.get('SMTP_USE_SSL'):
+#             with smtplib.SMTP_SSL(current_app.config['SMTP_SERVER'],
+#                                   current_app.config['SMTP_PORT']) as server:
+#                 server.login(current_app.config['SMTP_USERNAME'],
+#                              current_app.config['SMTP_PASSWORD'])
+#                 server.sendmail(current_app.config['SMTP_SENDER'],
+#                                 ['REDACTED_EMAIL'], msg.as_string())
+#         else:
+#             with smtplib.SMTP(current_app.config['SMTP_SERVER'],
+#                               current_app.config['SMTP_PORT']) as server:
+#                 server.starttls()
+#                 server.login(current_app.config['SMTP_USERNAME'],
+#                              current_app.config['SMTP_PASSWORD'])
+#                 server.sendmail(current_app.config['SMTP_SENDER'],
+#                                 ['REDACTED_EMAIL'], msg.as_string())
+#     except Exception:
+#         pass  # 上报失败不阻断登录
 
 
 def send_verification_email(email: str, code: str):

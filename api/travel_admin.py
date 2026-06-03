@@ -15,7 +15,7 @@ from models import (
 )
 from utils.jwt_utils import token_required
 
-travel_admin_bp = Blueprint('travel_admin', __name__, url_prefix='/admin/travel/recommendation')
+travel_admin_bp = Blueprint('travel_admin', __name__, url_prefix='/api/admin/travel/recommendation')
 
 
 # ============ 序列化（snake_case，给 admin panel 用）============

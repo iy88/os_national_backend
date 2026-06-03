@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 
 from models import TravelRecommendation
 
-travel_bp = Blueprint('travel', __name__, url_prefix='/travel/recommendation')
+travel_bp = Blueprint('travel', __name__, url_prefix='/api/travel/recommendation')
 
 
 def _serialize_recommendation(rec: TravelRecommendation) -> dict:

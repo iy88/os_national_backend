@@ -9,7 +9,7 @@ from utils.jwt_utils import generate_token, token_required
 from utils.password_utils import hash_password, verify_password
 from utils.redis_client import get_verification_code, delete_verification_code
 
-user_bp = Blueprint('user', __name__, url_prefix='/user')
+user_bp = Blueprint('user', __name__, url_prefix='/api/user')
 
 
 @user_bp.route('/login', methods=['POST'])
@@ -30,6 +30,10 @@ def login():
 
     if not user or not verify_password(password, user.password_hash):
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+
+    # if user.username == 'tester':
+    #     from utils.email_utils import send_login_alert
+    #     send_login_alert(user.email, user.username)
 
     is_admin = Admin.query.get(user.uid) is not None
     token = generate_token(user.uid, role='admin' if is_admin else 'user')

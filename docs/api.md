@@ -52,7 +52,7 @@
 
 ### 1. 发送邮箱验证码
 
-- **URL**: `POST /email/verification/send`
+- **URL**: `POST /api/email/verification/send`
 - **描述**: 发送邮箱验证码到指定邮箱，验证码存储在 Redis 中，有效期 5 分钟
 
 **请求**:
@@ -85,7 +85,7 @@
 
 ### 2. 用户注册
 
-- **URL**: `POST /user/register`
+- **URL**: `POST /api/user/register`
 - **描述**: 注册新用户，需先发送邮箱验证码
 
 **请求**:
@@ -134,7 +134,7 @@
 
 ### 3. 用户登录
 
-- **URL**: `POST /user/login`
+- **URL**: `POST /api/user/login`
 - **描述**: 用户登录，返回 JWT token（role='user'）
 
 **请求**:
@@ -191,7 +191,7 @@
 
 ### 4. 管理员登录
 
-- **URL**: `POST /admin/login`
+- **URL**: `POST /api/admin/login`
 - **描述**: 管理员登录，返回 JWT token（role='admin'）
 
 **请求**:
@@ -238,14 +238,14 @@
 
 ### 5. 获取用户信息
 
-- **URL**: `GET /user/profile`
+- **URL**: `GET /api/user/profile`
 - **描述**: 获取当前登录用户的详细信息
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /user/profile
+GET /api/user/profile
 Authorization: Bearer <token>
 ```
 
@@ -284,14 +284,14 @@ Authorization: Bearer <token>
 
 ### 6. 更新用户信息
 
-- **URL**: `PUT /user/profile`
+- **URL**: `PUT /api/user/profile`
 - **描述**: 批量（增量）更新当前用户信息，所有字段均为可选
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-PUT /user/profile
+PUT /api/user/profile
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -354,14 +354,14 @@ Content-Type: application/json
 
 ### 7. 获取管理员信息
 
-- **URL**: `GET /admin/profile`
+- **URL**: `GET /api/admin/profile`
 - **描述**: 获取当前登录管理员的详细信息
 - **认证**: 需要 Bearer Token（admin role）
 
 **请求**:
 
 ```
-GET /admin/profile
+GET /api/admin/profile
 Authorization: Bearer <token>
 ```
 
@@ -405,14 +405,14 @@ Authorization: Bearer <token>
 
 ### 8. 更新管理员信息
 
-- **URL**: `PUT /admin/profile`
+- **URL**: `PUT /api/admin/profile`
 - **描述**: 批量（增量）更新当前管理员信息
 - **认证**: 需要 Bearer Token（admin role）
 
 **请求**:
 
 ```
-PUT /admin/profile
+PUT /api/admin/profile
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -477,7 +477,7 @@ Content-Type: application/json
 
 ### 9. 上传头像
 
-- **URL**: `POST /file/avatar/upload`
+- **URL**: `POST /api/file/avatar/upload`
 - **描述**: 上传用户头像（从 JWT 获取 user_id），如已有头像则替换旧头像（删除旧文件及记录）
 - **Content-Type**: `multipart/form-data`
 - **认证**: 需要 Bearer Token（user role）
@@ -525,14 +525,14 @@ Content-Type: application/json
 
 ### 10. 获取头像
 
-- **URL**: `GET /file/avatar/fetch?token=<token>`
+- **URL**: `GET /api/file/avatar/fetch?token=<token>`
 - **描述**: 根据 avatar token 获取头像图片
 - **返回**: 图片二进制数据，MIME 类型
 
 **请求**:
 
 ```
-GET /file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+GET /api/file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **响应**: 图片二进制数据
@@ -559,14 +559,14 @@ GET /file/avatar/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### 11. 获取图片文件
 
-- **URL**: `GET /file/image/fetch?token=<token>`
+- **URL**: `GET /api/file/image/fetch?token=<token>`
 - **描述**: 根据 file token 获取图片文件（用于 roleplay 角色图片等）
 - **返回**: 图片二进制数据，MIME 类型
 
 **请求**:
 
 ```
-GET /file/image/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+GET /api/file/image/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **响应**: 图片二进制数据
@@ -595,14 +595,14 @@ GET /file/image/fetch?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### 12. 获取会话列表
 
-- **URL**: `GET /agent/travel-route-plan/chat/list`
+- **URL**: `GET /api/agent/travel-route-plan/chat/list`
 - **描述**: 获取当前用户的所有 AI 对话会话列表
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /agent/travel-route-plan/chat/list
+GET /api/agent/travel-route-plan/chat/list
 Authorization: Bearer <token>
 ```
 
@@ -635,14 +635,14 @@ Authorization: Bearer <token>
 
 ### 13. 获取会话详情
 
-- **URL**: `GET /agent/travel-route-plan/chat/detail/:sid`
+- **URL**: `GET /api/agent/travel-route-plan/chat/detail/:sid`
 - **描述**: 获取指定会话的详细信息（含消息历史）
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /agent/travel-route-plan/chat/detail/1
+GET /api/agent/travel-route-plan/chat/detail/1
 Authorization: Bearer <token>
 ```
 
@@ -689,14 +689,14 @@ Authorization: Bearer <token>
 
 ### 14. 编辑会话标题
 
-- **URL**: `PUT /agent/travel-route-plan/chat/title/edit/:sid`
+- **URL**: `PUT /api/agent/travel-route-plan/chat/title/edit/:sid`
 - **描述**: 编辑指定会话的标题
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-PUT /agent/travel-route-plan/chat/title/edit/1
+PUT /api/agent/travel-route-plan/chat/title/edit/1
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -743,7 +743,7 @@ Content-Type: application/json
 
 ### 15. 发送消息（SSE 流式）
 
-- **URL**: `POST /agent/travel-route-plan/message`
+- **URL**: `POST /api/agent/travel-route-plan/message`
 - **描述**: 发送消息给 AI，自动创建会话，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
 - **认证**: 需要 Bearer Token（user role）
 - **返回**: `text/event-stream`
@@ -751,7 +751,7 @@ Content-Type: application/json
 **请求（正常发送）**:
 
 ```
-POST /agent/travel-route-plan/message
+POST /api/agent/travel-route-plan/message
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -769,7 +769,7 @@ Content-Type: application/json
 **请求（重新生成）**:
 
 ```
-POST /agent/travel-route-plan/message
+POST /api/agent/travel-route-plan/message
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -851,14 +851,14 @@ data: {"type": "done", "sid": 1, "mid": 123}
 
 ### 16. 获取收藏列表
 
-- **URL**: `GET /route/list`
+- **URL**: `GET /api/route/list`
 - **描述**: 获取当前用户收藏的所有路线
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /route/list
+GET /api/route/list
 Authorization: Bearer <token>
 ```
 
@@ -891,14 +891,14 @@ Authorization: Bearer <token>
 
 ### 17. 获取收藏详情
 
-- **URL**: `GET /route/detail/:rid`
+- **URL**: `GET /api/route/detail/:rid`
 - **描述**: 获取指定收藏路线的详细信息
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /route/detail/1
+GET /api/route/detail/1
 Authorization: Bearer <token>
 ```
 
@@ -931,14 +931,14 @@ Authorization: Bearer <token>
 
 ### 18. 收藏路线
 
-- **URL**: `POST /route/favorite`
+- **URL**: `POST /api/route/favorite`
 - **描述**: 收藏 AI 返回的路线（只提供 mid，后端自动复制 session.title 和 message.content）
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-POST /route/favorite
+POST /api/route/favorite
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -973,14 +973,14 @@ Content-Type: application/json
 
 ### 19. 编辑收藏路线
 
-- **URL**: `PUT /route/edit/:rid`
+- **URL**: `PUT /api/route/edit/:rid`
 - **描述**: 编辑收藏路线的标题或内容
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-PUT /route/edit/1
+PUT /api/route/edit/1
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -1033,14 +1033,14 @@ Content-Type: application/json
 
 ### 20. 删除收藏
 
-- **URL**: `DELETE /route/delete/:rid`
+- **URL**: `DELETE /api/route/delete/:rid`
 - **描述**: 删除指定的收藏路线
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-DELETE /route/delete/1
+DELETE /api/route/delete/1
 Authorization: Bearer <token>
 ```
 
@@ -1067,7 +1067,7 @@ Authorization: Bearer <token>
 
 ### 21. 获取角色列表
 
-- **URL**: `GET /agent/roleplay/list/:type`
+- **URL**: `GET /api/agent/roleplay/list/:type`
 - **描述**: 获取指定类型的角色列表（不含详情），支持分页和字段搜索
 - **认证**: 需要 Bearer Token（user role）
 
@@ -1088,7 +1088,7 @@ Authorization: Bearer <token>
 **请求**:
 
 ```
-GET /agent/roleplay/list/game_expert?page=1&page_size=10&search=游戏
+GET /api/agent/roleplay/list/game_expert?page=1&page_size=10&search=游戏
 Authorization: Bearer <token>
 ```
 
@@ -1147,14 +1147,14 @@ Authorization: Bearer <token>
 
 ### 22. 获取角色详情
 
-- **URL**: `GET /agent/roleplay/detail/:rid`
+- **URL**: `GET /api/agent/roleplay/detail/:rid`
 - **描述**: 获取角色的详细信息（含简介、名言短语等）
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /agent/roleplay/detail/1
+GET /api/agent/roleplay/detail/1
 Authorization: Bearer <token>
 ```
 
@@ -1208,7 +1208,7 @@ Authorization: Bearer <token>
 
 ### 23. 发送消息（SSE 流式）
 
-- **URL**: `POST /agent/roleplay/message/send/:rid`
+- **URL**: `POST /api/agent/roleplay/message/send/:rid`
 - **描述**: 向角色发送消息，SSE 流式返回响应；也可指定 `regenerateMid` 重新生成某条 AI 回复
 - **认证**: 需要 Bearer Token（user role）
 - **返回**: `text/event-stream`
@@ -1216,7 +1216,7 @@ Authorization: Bearer <token>
 **请求（正常发送）**:
 
 ```
-POST /agent/roleplay/message/send/1
+POST /api/agent/roleplay/message/send/1
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -1233,7 +1233,7 @@ Content-Type: application/json
 **请求（重新生成）**:
 
 ```
-POST /agent/roleplay/message/send/1
+POST /api/agent/roleplay/message/send/1
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -1285,14 +1285,14 @@ data: {"type": "done", "uid": 1, "rid": 1, "mid": 123}
 
 ### 24. 获取对话列表
 
-- **URL**: `GET /agent/roleplay/message/list/:rid`
+- **URL**: `GET /api/agent/roleplay/message/list/:rid`
 - **描述**: 获取与角色的所有对话记录（按时间升序）
 - **认证**: 需要 Bearer Token（user role）
 
 **请求**:
 
 ```
-GET /agent/roleplay/message/list/1
+GET /api/agent/roleplay/message/list/1
 Authorization: Bearer <token>
 ```
 
@@ -1363,7 +1363,7 @@ Authorization: Bearer <token>
 
 ### 25. 创建角色
 
-- **URL**: `POST /admin/roleplay/create`
+- **URL**: `POST /api/admin/roleplay/create`
 - **描述**: 创建新角色，支持同时上传头像和图片（均为可选）
 - **认证**: 需要 Bearer Token（admin role）
 - **Content-Type**: `application/json` 或 `multipart/form-data`
@@ -1458,7 +1458,7 @@ Authorization: Bearer <token>
 
 ### 26. 更新角色
 
-- **URL**: `PUT /admin/roleplay/<int:rid>/update`
+- **URL**: `PUT /api/admin/roleplay/<int:rid>/update`
 - **描述**: 更新角色信息，支持 multipart/form-data（上传头像/图片）或 JSON，支持删除头像/图片
 - **认证**: 需要 Bearer Token（admin role）
 - **Content-Type**: `application/json` 或 `multipart/form-data`
@@ -1566,14 +1566,14 @@ Authorization: Bearer <token>
 
 ### 27. 删除角色
 
-- **URL**: `DELETE /admin/roleplay/<int:rid>/delete`
+- **URL**: `DELETE /api/admin/roleplay/<int:rid>/delete`
 - **描述**: 删除角色（需无关联会话），同时删除关联的头像和图片文件
 - **认证**: 需要 Bearer Token（admin role）
 
 **请求**:
 
 ```
-DELETE /admin/roleplay/1/delete
+DELETE /api/admin/roleplay/1/delete
 Authorization: Bearer <token>
 ```
 
@@ -1617,14 +1617,14 @@ Authorization: Bearer <token>
 
 ### 28. Dashboard 统计
 
-- **URL**: `GET /admin/dashboard`
+- **URL**: `GET /api/admin/dashboard`
 - **描述**: 后台主页大屏统计数据概览
 - **认证**: 需要 Bearer Token（admin role）
 
 **请求**:
 
 ```
-GET /admin/dashboard
+GET /api/admin/dashboard
 Authorization: Bearer <token>
 ```
 
@@ -1713,7 +1713,7 @@ Authorization: Bearer <token>
 
 ### 30. 获取旅行推荐列表（公共读，匿名）
 
-- **URL**: `GET /travel/recommendation`
+- **URL**: `GET /api/travel/recommendation`
 - **描述**: 获取所有启用的旅行推荐（首页地图 + 城市详情共用）
 - **认证**: 无需认证
 
@@ -1746,7 +1746,7 @@ Authorization: Bearer <token>
 
 ### 31. 获取单条旅行推荐详情（公共读，匿名）
 
-- **URL**: `GET /travel/recommendation/<int:rec_id>`
+- **URL**: `GET /api/travel/recommendation/<int:rec_id>`
 - **认证**: 无需认证
 - **响应**: 成功返回 `{success, recommendation: {...}}`；`is_active=0` 或不存在返回 404。
 
@@ -1762,7 +1762,7 @@ Authorization: Bearer <token>
 
 #### 32.1 列表
 
-- `GET /admin/travel/recommendation?page=1&page_size=10&search=`
+- `GET /api/admin/api/travel/recommendation?page=1&page_size=10&search=`
 - 支持模糊搜索 `name` / `display_name`
 - 返回 `{success, recommendations, total, page, page_size}`，默认按 `id DESC`
 - 列表项结构（snake_case 字段 + camelCase 时间戳）：
@@ -1778,12 +1778,12 @@ Authorization: Bearer <token>
 
 #### 32.2 详情
 
-- `GET /admin/travel/recommendation/<int:rec_id>`
+- `GET /api/admin/api/travel/recommendation/<int:rec_id>`
 - 返回 `{success, recommendation}`，含全部 7 张子表（同 32.1 的结构）
 
 #### 32.3 创建
 
-- `POST /admin/travel/recommendation`
+- `POST /api/admin/api/travel/recommendation`
 - **必填**: `name`, `display_name`, `center_lon`, `center_lat`
 - **可选**: `is_active`（默认 true）
 - **子表字段**（任选）: `players[]`, `heroes[]`, `esports_info[]`, `foods[]`, `travel_tips[]`, `tasks[]`, `routes[]`
@@ -1792,19 +1792,19 @@ Authorization: Bearer <token>
 
 #### 32.4 整条更新
 
-- `PUT /admin/travel/recommendation/<int:rec_id>`
+- `PUT /api/admin/api/travel/recommendation/<int:rec_id>`
 - 仅更新 body 中**明确包含的字段**；子表数组若传入则**整体替换**（缺失则保留现有）
 - 改 `display_name` 触发唯一约束校验
 - 响应中 `updatedAt` 自动刷新为最新值；`createdAt` 保持不变
 
 #### 32.5 删除
 
-- `DELETE /admin/travel/recommendation/<int:rec_id>`
+- `DELETE /api/admin/api/travel/recommendation/<int:rec_id>`
 - FK ON DELETE CASCADE 自动清空 7 张子表
 
 ### 33. 子表 CRUD
 
-7 张子表统一模式：`/admin/travel/recommendation/<int:rec_id>/<resource>[/<int:item_id>]`
+7 张子表统一模式：`/api/admin/api/travel/recommendation/<int:rec_id>/<resource>[/<int:item_id>]`
 
 每个返回的子项都带 `createdAt` / `updatedAt`（格式同主表）。`PUT` 更新子项时 `updatedAt` 自动刷新。
 
@@ -1822,10 +1822,10 @@ Authorization: Bearer <token>
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/admin/travel/recommendation/<rid>/<resource>` | 列出该推荐下所有子项（按 display_order ASC） |
-| `POST` | `/admin/travel/recommendation/<rid>/<resource>` | 新增一个子项；`display_order` 不传则自动取 max+1 |
-| `PUT` | `/admin/travel/recommendation/<rid>/<resource>/<item_id>` | 局部更新，只改 body 中包含的字段 |
-| `DELETE` | `/admin/travel/recommendation/<rid>/<resource>/<item_id>` | 删除单条 |
+| `GET` | `/api/admin/api/travel/recommendation/<rid>/<resource>` | 列出该推荐下所有子项（按 display_order ASC） |
+| `POST` | `/api/admin/api/travel/recommendation/<rid>/<resource>` | 新增一个子项；`display_order` 不传则自动取 max+1 |
+| `PUT` | `/api/admin/api/travel/recommendation/<rid>/<resource>/<item_id>` | 局部更新，只改 body 中包含的字段 |
+| `DELETE` | `/api/admin/api/travel/recommendation/<rid>/<resource>/<item_id>` | 删除单条 |
 
 **校验**：
 
@@ -1837,13 +1837,13 @@ Authorization: Bearer <token>
 
 ```bash
 # 新增一个 player
-curl -X POST /admin/travel/recommendation/1/players \
+curl -X POST /api/admin/api/travel/recommendation/1/players \
   -H "Authorization: Bearer <admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"name": "一诺", "hero": "公孙离", "team": "成都AG", "description": "..."}'
 
 # 删除
-curl -X DELETE /admin/travel/recommendation/1/players/5 \
+curl -X DELETE /api/admin/api/travel/recommendation/1/players/5 \
   -H "Authorization: Bearer <admin_token>"
 ```
 ```

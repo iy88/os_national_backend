@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from utils.email_utils import is_valid_email, generate_verification_code, send_verification_email
 
-email_bp = Blueprint('email', __name__, url_prefix='/email')
+email_bp = Blueprint('email', __name__, url_prefix='/api/email')
 
 
 @email_bp.route('/verification/send', methods=['POST'])

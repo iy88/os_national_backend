@@ -32,17 +32,17 @@ os_national_backend/
 │   └── travel.py              # TravelRecommendation + 7 子表（首页地图数据）
 ├── api/
 │   ├── __init__.py            # 导出所有 Blueprint
-│   ├── user.py                # /user/* — 注册/登录/个人信息
-│   ├── admin.py               # /admin/login, /admin/profile
-│   ├── dashboard.py           # /admin/dashboard/* — 仪表盘统计
-│   ├── email.py               # /email/* — 邮箱验证码
-│   ├── file.py                # /file/* — 头像/图片上传/获取
-│   ├── agent.py               # /agent/travel-route-plan/* — AI 旅行规划对话
-│   ├── route.py               # /route/* — 路线收藏
-│   ├── roleplay.py            # /agent/roleplay/* — 角色扮演对话
-│   ├── roleplay_admin.py      # /admin/roleplay/* — 角色管理
-│   ├── travel.py              # /travel/recommendation — 首页地图公共读（匿名）
-│   └── travel_admin.py        # /admin/travel/recommendation — 旅行推荐 CRUD
+│   ├── user.py                # /api/user/* — 注册/登录/个人信息
+│   ├── admin.py               # /api/admin/login, /api/admin/profile
+│   ├── dashboard.py           # /api/admin/dashboard/* — 仪表盘统计
+│   ├── email.py               # /api/email/* — 邮箱验证码
+│   ├── file.py                # /api/file/* — 头像/图片上传/获取
+│   ├── agent.py               # /api/agent/travel-route-plan/* — AI 旅行规划对话
+│   ├── route.py               # /api/route/* — 路线收藏
+│   ├── roleplay.py            # /api/agent/roleplay/* — 角色扮演对话
+│   ├── roleplay_admin.py      # /api/admin/roleplay/* — 角色管理
+│   ├── travel.py              # /api/travel/recommendation — 首页地图公共读（匿名）
+│   └── travel_admin.py        # /api/admin/api/travel/recommendation — 旅行推荐 CRUD
 ├── utils/
 │   ├── jwt_utils.py           # JWT 生成/验证/装饰器（支持 role 区分）
 │   ├── password_utils.py      # bcrypt 加密/验证
@@ -412,7 +412,7 @@ AI 对话会话。
 
 ## email_bp — `/email`
 
-### POST /email/verification/send
+### POST /api/email/verification/send
 
 发送 6 位邮箱验证码到 Redis，TTL 5 分钟（`VERIFICATION_CODE_EXPIRE=300`）。
 
@@ -439,7 +439,7 @@ AI 对话会话。
 
 ## user_bp — `/user`
 
-### POST /user/register
+### POST /api/user/register
 
 用户注册，流程：邮箱格式 → 验证码校验 → 密码长度 → User + UserInfo 创建 → JWT 返回。
 
@@ -470,7 +470,7 @@ AI 对话会话。
 
 ---
 
-### POST /user/login
+### POST /api/user/login
 
 支持 username 或 email 登录，bcrypt 验证后返回 JWT。
 
@@ -505,11 +505,11 @@ AI 对话会话。
 
 ---
 
-### GET /user/profile
+### GET /api/user/profile
 
 JWT 认证。返回完整用户信息，`avatarToken` 有头像时返回。
 
-### PUT /user/profile
+### PUT /api/user/profile
 
 JWT 认证。增量更新（username/gender/age/basicInfo/bio），不传字段保持不变。
 
@@ -517,7 +517,7 @@ JWT 认证。增量更新（username/gender/age/basicInfo/bio），不传字段�
 
 ## file_bp — `/file`
 
-### POST /file/avatar/upload
+### POST /api/file/avatar/upload
 
 头像上传，multipart/form-data（`user_id` + `file`）。
 
@@ -530,13 +530,13 @@ JWT 认证。增量更新（username/gender/age/basicInfo/bio），不传字段�
 3. 创建 File 记录，更新 `UserInfo.avatar_id`
 4. 返回 JWT avatar token（有效期同 JWT）
 
-### GET /file/avatar/fetch?token=\<jwt\>
+### GET /api/file/avatar/fetch?token=\<jwt\>
 
 通过 Avatar Token 获取头像图片。JWT 解码取 `fid` → File 记录 → 物理文件存在检查 → `send_file` 配合正确 MIME。
 
 ---
 
-## agent_bp — `/agent/travel-route-plan`
+## agent_bp — `/api/agent/travel-route-plan`
 
 ### GET /chat/list
 
@@ -604,7 +604,7 @@ JWT 认证。删除收藏。
 
 ---
 
-## roleplay_bp — `/agent/roleplay`
+## roleplay_bp — `/api/agent/roleplay`
 
 ### GET /list/:type
 
@@ -631,21 +631,21 @@ JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）
 
 ---
 
-## travel_bp — `/travel/recommendation`
+## travel_bp — `/api/travel/recommendation`
 
 首页 SVG 地图数据，**匿名访问**。响应字段名（`displayName` / `eSportsInfo` / `travelTips`）保留与 `cities.json` 一致，便于前端平滑切换。
 
-### GET /travel/recommendation
+### GET /api/travel/recommendation
 
 无需认证。返回所有 `is_active=1` 的推荐（含 7 张子表嵌套）。
 
-### GET /travel/recommendation/:id
+### GET /api/travel/recommendation/:id
 
 无需认证。返回单条详情；`is_active=0` 或不存在返回 404。
 
 ---
 
-## travel_admin_bp — `/admin/travel/recommendation`
+## travel_admin_bp — `/api/admin/api/travel/recommendation`
 
 **Bearer Token + admin role**。管理 1 张主表 + 7 张子表。
 
@@ -653,11 +653,11 @@ JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）
 
 | 方法    | 路径                                          | 说明                                          |
 |-------|---------------------------------------------|---------------------------------------------|
-| GET   | `/admin/travel/recommendation?page=&search=` | 分页 + 模糊搜索 name/display_name，默认 `id DESC` |
-| GET   | `/admin/travel/recommendation/:id`          | 详情（含 7 张子表，snake_case 字段）                  |
-| POST  | `/admin/travel/recommendation`              | 整条创建（body 含全部子表数组）                          |
-| PUT   | `/admin/travel/recommendation/:id`          | 整条更新（缺失子表 key 则保留现有，传入空数组则清空）              |
-| DELETE | `/admin/travel/recommendation/:id`          | 删除主表，FK CASCADE 自动清 7 张子表                  |
+| GET   | `/api/admin/api/travel/recommendation?page=&search=` | 分页 + 模糊搜索 name/display_name，默认 `id DESC` |
+| GET   | `/api/admin/api/travel/recommendation/:id`          | 详情（含 7 张子表，snake_case 字段）                  |
+| POST  | `/api/admin/api/travel/recommendation`              | 整条创建（body 含全部子表数组）                          |
+| PUT   | `/api/admin/api/travel/recommendation/:id`          | 整条更新（缺失子表 key 则保留现有，传入空数组则清空）              |
+| DELETE | `/api/admin/api/travel/recommendation/:id`          | 删除主表，FK CASCADE 自动清 7 张子表                  |
 
 ### 子表 28 个端点（7 子表 × 4 操作）
 
@@ -673,7 +673,7 @@ JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）
 | 打卡任务 | `tasks` | `title` / `description` / `reward` / `display_order` |
 | 推荐路线 | `routes` | `content` / `display_order` |
 
-URL 模式：`/admin/travel/recommendation/<rid>/<resource>[/<item_id>]`。`POST` 时 `display_order` 不传则自动取 max+1。
+URL 模式：`/api/admin/api/travel/recommendation/<rid>/<resource>[/<item_id>]`。`POST` 时 `display_order` 不传则自动取 max+1。
 
 **校验**：`rid` 不存在 → 404；`item_id` 不属于该 `rid` → 404；必填字段缺失 → 400。
 
@@ -839,17 +839,17 @@ curl http://localhost:5000/health
 
 ```bash
 # 发送验证码
-curl -X POST http://localhost:5000/email/verification/send \
+curl -X POST http://localhost:5000/api/email/verification/send \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com"}'
 
 # 注册
-curl -X POST http://localhost:5000/user/register \
+curl -X POST http://localhost:5000/api/user/register \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "123456", "verifyCode": "123456"}'
 
 # 登录
-curl -X POST http://localhost:5000/user/login \
+curl -X POST http://localhost:5000/api/user/login \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "123456"}'
 ```
@@ -858,14 +858,14 @@ curl -X POST http://localhost:5000/user/login \
 
 ```bash
 # 发送消息（替换 <token> 为登录获取的 JWT）
-curl -X POST http://localhost:5000/agent/travel-route-plan/message \
+curl -X POST http://localhost:5000/api/agent/travel-route-plan/message \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"content": "我想去云南旅行，5天时间推荐"}' \
   -N
 
 # 获取会话列表
-curl http://localhost:5000/agent/travel-route-plan/chat/list \
+curl http://localhost:5000/api/agent/travel-route-plan/chat/list \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -873,15 +873,15 @@ curl http://localhost:5000/agent/travel-route-plan/chat/list \
 
 ```bash
 # 角色列表
-curl http://localhost:5000/agent/roleplay/list/game_expert \
+curl http://localhost:5000/api/agent/roleplay/list/game_expert \
   -H "Authorization: Bearer <token>"
 
 # 角色详情
-curl http://localhost:5000/agent/roleplay/detail/1 \
+curl http://localhost:5000/api/agent/roleplay/detail/1 \
   -H "Authorization: Bearer <token>"
 
 # 发送消息
-curl -X POST http://localhost:5000/agent/roleplay/message/send/1 \
+curl -X POST http://localhost:5000/api/agent/roleplay/message/send/1 \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"content": "你好，推荐一些 RPG 游戏"}' \
@@ -892,12 +892,12 @@ curl -X POST http://localhost:5000/agent/roleplay/message/send/1 \
 
 ```bash
 # 公共读，无需认证
-curl http://localhost:5000/travel/recommendation
-curl http://localhost:5000/travel/recommendation/1
+curl http://localhost:5000/api/travel/recommendation
+curl http://localhost:5000/api/travel/recommendation/1
 
 # 管理端（需 admin token）
 curl -H "Authorization: Bearer <admin_token>" \
-  http://localhost:5000/admin/travel/recommendation?page=1&page_size=10
+  http://localhost:5000/api/admin/api/travel/recommendation?page=1&page_size=10
 ```
 
 灌库：

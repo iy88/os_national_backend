@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from models import db, Route, Message, ConversationSession
 from utils.jwt_utils import token_required
 
-route_bp = Blueprint('route', __name__, url_prefix='/route')
+route_bp = Blueprint('route', __name__, url_prefix='/api/route')
 
 
 @route_bp.route('/list', methods=['GET'])

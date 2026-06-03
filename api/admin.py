@@ -7,7 +7,7 @@ from utils.file_utils import generate_file_token
 from utils.jwt_utils import generate_token, token_required
 from utils.password_utils import verify_password
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 
 @admin_bp.route('/login', methods=['POST'])

@@ -14,7 +14,7 @@ from utils.file_utils import (
 )
 from utils.jwt_utils import token_required
 
-file_bp = Blueprint('file', __name__, url_prefix='/file')
+file_bp = Blueprint('file', __name__, url_prefix='/api/file')
 
 
 @file_bp.route('/avatar/upload', methods=['POST'])

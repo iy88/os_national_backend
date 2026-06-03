@@ -37,7 +37,7 @@ from utils.redis_client import (
 
 SSE_CONNECT_TIMEOUT_SECONDS = 120
 
-agent_bp = Blueprint('agent', __name__, url_prefix='/agent/travel-route-plan')
+agent_bp = Blueprint('agent', __name__, url_prefix='/api/agent/travel-route-plan')
 
 
 def sse_response(generator_func):

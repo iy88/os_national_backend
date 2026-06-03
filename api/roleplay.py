@@ -38,7 +38,7 @@ from utils.redis_client import (
 
 SSE_CONNECT_TIMEOUT_SECONDS = 120
 
-roleplay_bp = Blueprint('roleplay', __name__, url_prefix='/agent/roleplay')
+roleplay_bp = Blueprint('roleplay', __name__, url_prefix='/api/agent/roleplay')
 
 
 def sse_response(generator_func):
