@@ -143,3 +143,104 @@
 - `RoleplaySession.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)
 - `RoleplayMessage.uid` 外键关联 `User.uid` (ON DELETE CASCADE)
 - `RoleplayMessage.rid` 外键关联 `RoleplayCharacter.rid` (ON DELETE CASCADE)
+
+## TravelRecommendation 表 (travel_recommendations)
+
+首页 SVG 地图上的旅行推荐点（一份 = 一座城市/地点）。
+
+| 字段           | 类型              | 约束                                       | 说明                              |
+|--------------|-----------------|------------------------------------------|---------------------------------|
+| id           | INT             | PRIMARY KEY, AUTO_INCREMENT              | 推荐唯一标识                          |
+| name         | VARCHAR(120)    | NOT NULL                                 | 完整名，如 "西安 · 长安荣耀之旅"             |
+| display_name | VARCHAR(80)     | NOT NULL, UNIQUE                         | 短名，如 "西安"，作为前端展示与唯一标识           |
+| center_lon   | DECIMAL(10, 6)  | NOT NULL                                 | 经度（地图投影用）                       |
+| center_lat   | DECIMAL(10, 6)  | NOT NULL                                 | 纬度（地图投影用）                       |
+| is_active    | TINYINT(1)      | NOT NULL, DEFAULT 1                      | 是否可见（0=隐藏，1=可见）                 |
+| created_at   | DATETIME        | DEFAULT CURRENT_TIMESTAMP                | 创建时间                            |
+| updated_at   | DATETIME        | ON UPDATE CURRENT_TIMESTAMP              | 更新时间                            |
+
+## RecommendationPlayer 表 (recommendation_players)
+
+旅行推荐中的电竞选手（子表）。
+
+| 字段                 | 类型          | 约束                                                  | 说明              |
+|--------------------|-------------|-----------------------------------------------------|-----------------|
+| id                 | INT         | PRIMARY KEY, AUTO_INCREMENT                         | 子项唯一标识          |
+| recommendation_id  | INT         | FOREIGN KEY(travel_recommendations.id), NOT NULL    | 所属推荐            |
+| name               | VARCHAR(120) | NOT NULL                                            | 选手名             |
+| hero               | VARCHAR(80) | NULLABLE                                            | 代表英雄            |
+| team               | VARCHAR(120) | NULLABLE                                            | 战队              |
+| description        | TEXT        | NULLABLE                                            | 简介              |
+| display_order      | INT         | NOT NULL, DEFAULT 0                                 | 在所属推荐中的展示顺序     |
+| created_at         | DATETIME    | DEFAULT CURRENT_TIMESTAMP                           | 创建时间            |
+| updated_at         | DATETIME    | ON UPDATE CURRENT_TIMESTAMP                         | 更新时间            |
+
+## RecommendationHero 表 (recommendation_heroes)
+
+旅行推荐中的王者荣耀英雄（子表）。
+
+| 字段                 | 类型           | 约束                                                  | 说明           |
+|--------------------|--------------|-----------------------------------------------------|--------------|
+| id                 | INT          | PRIMARY KEY, AUTO_INCREMENT                         | 子项唯一标识       |
+| recommendation_id  | INT          | FOREIGN KEY(travel_recommendations.id), NOT NULL    | 所属推荐         |
+| name               | VARCHAR(80)  | NOT NULL                                            | 英雄名          |
+| role               | VARCHAR(40)  | NULLABLE                                            | 职业（刺客/法师/...） |
+| style              | VARCHAR(120) | NULLABLE                                            | 风格           |
+| description        | TEXT         | NULLABLE                                            | 简介           |
+| display_order      | INT          | NOT NULL, DEFAULT 0                                 | 展示顺序         |
+| created_at         | DATETIME     | DEFAULT CURRENT_TIMESTAMP                           | 创建时间         |
+| updated_at         | DATETIME     | ON UPDATE CURRENT_TIMESTAMP                         | 更新时间         |
+
+## RecommendationEsportsInfo / Foods / TravelTips / Routes 表
+
+4 个 bullet 列表子表，结构相同。
+
+| 字段                 | 类型            | 约束                                                  | 说明                  |
+|--------------------|---------------|-----------------------------------------------------|---------------------|
+| id                 | INT           | PRIMARY KEY, AUTO_INCREMENT                         | 子项唯一标识              |
+| recommendation_id  | INT           | FOREIGN KEY(travel_recommendations.id), NOT NULL    | 所属推荐                |
+| content            | VARCHAR(500)  | NOT NULL                                            | 列表项文本（可含 emoji）     |
+| display_order      | INT           | NOT NULL, DEFAULT 0                                 | 展示顺序                |
+| created_at         | DATETIME      | DEFAULT CURRENT_TIMESTAMP                           | 创建时间                |
+| updated_at         | DATETIME      | ON UPDATE CURRENT_TIMESTAMP                         | 更新时间                |
+
+**4 张表**：`recommendation_esports_info`（电竞资讯）、`recommendation_foods`（美食）、`recommendation_travel_tips`（旅行贴士）、`recommendation_routes`（推荐路线）。
+
+## RecommendationTask 表 (recommendation_tasks)
+
+旅行推荐中的打卡任务（子表，含 title/desc/reward）。
+
+| 字段                 | 类型           | 约束                                                  | 说明           |
+|--------------------|--------------|-----------------------------------------------------|--------------|
+| id                 | INT          | PRIMARY KEY, AUTO_INCREMENT                         | 子项唯一标识       |
+| recommendation_id  | INT          | FOREIGN KEY(travel_recommendations.id), NOT NULL    | 所属推荐         |
+| title              | VARCHAR(120) | NOT NULL                                            | 任务名          |
+| description        | TEXT         | NULLABLE                                            | 任务说明         |
+| reward             | VARCHAR(120) | NULLABLE                                            | 奖励           |
+| display_order      | INT          | NOT NULL, DEFAULT 0                                 | 展示顺序         |
+| created_at         | DATETIME     | DEFAULT CURRENT_TIMESTAMP                           | 创建时间         |
+| updated_at         | DATETIME     | ON UPDATE CURRENT_TIMESTAMP                         | 更新时间         |
+
+## Travel Recommendation 表关系
+
+- `TravelRecommendation` 是主表，存放于首页 SVG 地图上的每个推荐点（一对一对应 cities.json 中的一条城市）
+- 7 张子表都通过 `recommendation_id` 外键关联 `TravelRecommendation.id` (ON DELETE CASCADE)
+  - `recommendation_players`、`recommendation_heroes`、`recommendation_tasks` 字段结构化
+  - `recommendation_esports_info`、`recommendation_foods`、`recommendation_travel_tips`、`recommendation_routes` 字段极简（仅 content + display_order）
+- `display_name` 唯一约束，防止数据重复
+- `is_active=0` 时公共读 API 不返回该推荐，但 admin 仍可见
+
+**关系图**：
+
+```
+TravelRecommendation (1)
+  ├── RecommendationPlayer (N)
+  ├── RecommendationHero (N)
+  ├── RecommendationEsportsInfo (N)
+  ├── RecommendationFood (N)
+  ├── RecommendationTravelTip (N)
+  ├── RecommendationTask (N)
+  └── RecommendationRoute (N)
+```
+
+**种子数据**：`scripts/seed_travel_recommendations.py` 从 `os_national_frontend/src/data/cities.json` 灌入 6 条记录，idempotent（按 `display_name` 查重）。

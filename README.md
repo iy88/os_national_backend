@@ -27,27 +27,33 @@ os_national_backend/
 │   ├── admin.py               # Admin, AdminInfo
 │   ├── conversation.py        # ConversationSession, Message
 │   ├── route.py               # Route
-│   └── roleplay.py            # RoleplayCharacter, RoleplayCharacterDetail,
-│                               # RoleplaySession, RoleplayMessage
+│   ├── roleplay.py            # RoleplayCharacter, RoleplayCharacterDetail,
+│   │                          # RoleplaySession, RoleplayMessage
+│   └── travel.py              # TravelRecommendation + 7 子表（首页地图数据）
 ├── api/
 │   ├── __init__.py            # 导出所有 Blueprint
 │   ├── user.py                # /user/* — 注册/登录/个人信息
-│   ├── admin.py               # /admin/* — 管理员登录/个人信息
+│   ├── admin.py               # /admin/login, /admin/profile
+│   ├── dashboard.py           # /admin/dashboard/* — 仪表盘统计
 │   ├── email.py               # /email/* — 邮箱验证码
 │   ├── file.py                # /file/* — 头像/图片上传/获取
 │   ├── agent.py               # /agent/travel-route-plan/* — AI 旅行规划对话
 │   ├── route.py               # /route/* — 路线收藏
 │   ├── roleplay.py            # /agent/roleplay/* — 角色扮演对话
-│   └── roleplay_admin.py      # /admin/roleplay/* — 角色管理
+│   ├── roleplay_admin.py      # /admin/roleplay/* — 角色管理
+│   ├── travel.py              # /travel/recommendation — 首页地图公共读（匿名）
+│   └── travel_admin.py        # /admin/travel/recommendation — 旅行推荐 CRUD
 ├── utils/
 │   ├── jwt_utils.py           # JWT 生成/验证/装饰器（支持 role 区分）
-│   ├── password_utils.py       # bcrypt 加密/验证
+│   ├── password_utils.py      # bcrypt 加密/验证
 │   ├── email_utils.py         # 邮箱验证/SMTP 发送
 │   ├── file_utils.py          # 文件处理/token（generate_file_token）
 │   ├── ai_provider.py         # AI Provider 工厂（腾讯 ADP / DashScope）
-│   └── redis_client.py        # Redis 所有 key 函数
+│   └── redis_client.py        # Redis 所有 key 函数（含 regen_inflight 锁）
 ├── scripts/
-│   └── find_orphan_images.py  # 检查孤立图片脚本
+│   ├── find_orphan_images.py  # 检查孤立图片脚本
+│   ├── seed_travel_recommendations.py  # 从 cities.json 灌 8 张 travel 表
+│   └── fix_file_extensions.py          # 修复历史 secure_filename 扩展名错误
 └── docs/
     ├── api.md                 # API 文档
     └── db.md                  # 数据库文档
@@ -82,6 +88,7 @@ Agent 和 Roleplay 均采用 SSE（Server-Sent Events）流式响应，核心是
 | 事件流        | `stream_events:{mid}`   | Stream，XADD      | content/done/error 事件，支持追尾消费 |
 | 状态机        | `stream_state:{mid}`    | Hash             | running/done/error 状态，轮询检测完成 |
 | 分布式锁       | `stream_producer:{sid}` | String，SET NX EX | 确保同一 sid 只有一个 Producer       |
+| 重生锁        | `regen_inflight:{mid}`  | String，SET NX EX | 同 mid 并发重新生成请求互斥（409，agent+roleplay 共用） |
 | AI session | `ai_session:{sid}`      | String           | DashScope session_id 缓存复用    |
 
 **关键设计**：
@@ -90,6 +97,7 @@ Agent 和 Roleplay 均采用 SSE（Server-Sent Events）流式响应，核心是
 - Producer 写入 `append_stream_content`（APPEND）同时写入 `append_stream_event`（XADD），两者互不阻塞。
 - Consumer 先发 `catchup`（全量内容），再从 `stream_last_event_id` 继续追尾新事件。
 - 前端断开连接时 Producer 继续运行，写完后写入 `done` 事件；Consumer 的 XREAD 超时后自动退出。
+- `stream_producer:{sid}` 锁粒度是 session，无法拦截"对同一消息并发重生"。`regen_inflight:{mid}` 是 per-mid 锁（agent 和 roleplay 共用同一个 key），生效范围更细：handler 入口抢占，Producer `finally` + 每个 chunk refresh。
 
 ## AI Provider 工厂模式
 
@@ -363,6 +371,43 @@ AI 对话会话。
 
 ---
 
+## 旅行推荐模块（models/travel.py）
+
+首页 SVG 地图上的每个点 = 一条 `TravelRecommendation`，下方 7 张子表为一对多关系。数据从 `os_national_frontend/src/data/cities.json` 迁移而来，由 `scripts/seed_travel_recommendations.py` 灌库（idempotent）。
+
+### TravelRecommendation
+
+| 字段           | 类型              | 约束                  | 说明                          |
+|--------------|-----------------|---------------------|-----------------------------|
+| id           | INT             | PK, AUTO_INCREMENT   | 推荐唯一标识                      |
+| name         | VARCHAR(120)    | NOT NULL            | 完整名，如 "西安 · 长安荣耀之旅"         |
+| display_name | VARCHAR(80)     | NOT NULL, UNIQUE    | 短名，如 "西安"（前端 map label 用）   |
+| center_lon   | DECIMAL(10, 6)  | NOT NULL            | 经度                          |
+| center_lat   | DECIMAL(10, 6)  | NOT NULL            | 纬度                          |
+| is_active    | TINYINT(1)      | NOT NULL, DEFAULT 1 | 软删除/隐藏（0=隐藏，1=可见）           |
+| created_at   | DATETIME        | DEFAULT             | 创建时间                        |
+| updated_at   | DATETIME        | ON UPDATE           | 更新时间                        |
+
+**注**：所有点拍平在同一地图上，**不设 `display_order`**；公共读按 `id ASC` 排序。
+
+### 7 张子表
+
+| 表名                              | 字段（除 `id` / `recommendation_id` / `display_order` / 时间戳）| 对应原 JSON key        |
+|---------------------------------|---------------------------------------------------|--------------------|
+| `recommendation_players`        | `name`, `hero`, `team`, `description`             | `players[]`        |
+| `recommendation_heroes`         | `name`, `role`, `style`, `description`             | `heroes[]`         |
+| `recommendation_esports_info`   | `content` (VARCHAR 500)                            | `eSportsInfo[]`    |
+| `recommendation_foods`          | `content` (VARCHAR 500)                            | `food[]`           |
+| `recommendation_travel_tips`    | `content` (VARCHAR 500)                            | `travelTips[]`     |
+| `recommendation_tasks`          | `title`, `description`, `reward`                   | `tasks[]`          |
+| `recommendation_routes`         | `content` (VARCHAR 500)                            | `recommendedRoutes[]` |
+
+所有 FK 都是 `ON DELETE CASCADE`（删除主表自动清空 7 张子表）。子表保留 `display_order` 以便管理端重新排序。
+
+**种子数据**：`python scripts/seed_travel_recommendations.py`，从 `cities.json` 读取 6 条灌入，按 `display_name` 去重（重复执行安全）。
+
+---
+
 # API 层
 
 ## email_bp — `/email`
@@ -525,9 +570,11 @@ JWT 认证。编辑会话标题。
 **重生成**（`regenerateMid`）：
 
 - 校验旧消息是 assistant 且属于该用户会话
+- 抢占 `regen_inflight:{regenerate_mid}` 锁（per-mid）；若同 mid 已有进行中的重生请求，返回 `409 {code: REGENERATE_IN_PROGRESS}`
 - 删除旧 assistant 消息，创建新 placeholder
 - 从 DB 构建**全量消息历史**（`session_id=None`），重新拉流
 - 若原消息是首轮 assistant，新消息也会重新生成标题
+- 锁在 Producer `finally` 中释放；TTL 3600s 兜底
 
 **SSE 事件类型**：`start` / `content` / `catchup` / `done` / `error` / `ping`（keepalive）
 
@@ -575,12 +622,60 @@ JWT 认证。角色详情（含 bio、phrases JSON 数组、detailAvatarId）。
 
 - **system prompt 动态注入**：`bio` + `phrases` 拼接，每次请求实时构建，不存库，注入到 messages 数组首位
 - **ai_session_id 缓存复用**：Redis 缓存 `rp_stream:{uid}:{rid}:ai_session`，失败自动回退全量历史
-- **支持重生成**：`regenerateMid` 参数，与 agent_bp 逻辑一致
+- **支持重生成**：`regenerateMid` 参数，与 agent_bp 逻辑一致（同 mid 并发时 409）
 - **恢复模式**：同 agent_bp，`catchup` + 追尾
 
 ### GET /message/list/:rid
 
 JWT 认证。对话历史（按 `created_at` **升序**，含 `incompleteMid`）。
+
+---
+
+## travel_bp — `/travel/recommendation`
+
+首页 SVG 地图数据，**匿名访问**。响应字段名（`displayName` / `eSportsInfo` / `travelTips`）保留与 `cities.json` 一致，便于前端平滑切换。
+
+### GET /travel/recommendation
+
+无需认证。返回所有 `is_active=1` 的推荐（含 7 张子表嵌套）。
+
+### GET /travel/recommendation/:id
+
+无需认证。返回单条详情；`is_active=0` 或不存在返回 404。
+
+---
+
+## travel_admin_bp — `/admin/travel/recommendation`
+
+**Bearer Token + admin role**。管理 1 张主表 + 7 张子表。
+
+### 主表 5 个端点
+
+| 方法    | 路径                                          | 说明                                          |
+|-------|---------------------------------------------|---------------------------------------------|
+| GET   | `/admin/travel/recommendation?page=&search=` | 分页 + 模糊搜索 name/display_name，默认 `id DESC` |
+| GET   | `/admin/travel/recommendation/:id`          | 详情（含 7 张子表，snake_case 字段）                  |
+| POST  | `/admin/travel/recommendation`              | 整条创建（body 含全部子表数组）                          |
+| PUT   | `/admin/travel/recommendation/:id`          | 整条更新（缺失子表 key 则保留现有，传入空数组则清空）              |
+| DELETE | `/admin/travel/recommendation/:id`          | 删除主表，FK CASCADE 自动清 7 张子表                  |
+
+### 子表 28 个端点（7 子表 × 4 操作）
+
+每个子表都有标准 4 端点：`GET` 列表 / `POST` 创建 / `PUT:id` 更新 / `DELETE:id` 删除：
+
+| 子表 | resource 路径 | 列表字段 |
+|------|-------------|----------|
+| 推荐选手 | `players` | `name` / `hero` / `team` / `description` / `display_order` |
+| 推荐英雄 | `heroes` | `name` / `role` / `style` / `description` / `display_order` |
+| 电竞资讯 | `esports_info` | `content` / `display_order` |
+| 美食 | `foods` | `content` / `display_order` |
+| 旅行贴士 | `travel_tips` | `content` / `display_order` |
+| 打卡任务 | `tasks` | `title` / `description` / `reward` / `display_order` |
+| 推荐路线 | `routes` | `content` / `display_order` |
+
+URL 模式：`/admin/travel/recommendation/<rid>/<resource>[/<item_id>]`。`POST` 时 `display_order` 不传则自动取 max+1。
+
+**校验**：`rid` 不存在 → 404；`item_id` 不属于该 `rid` → 404；必填字段缺失 → 400。
 
 ---
 
@@ -637,10 +732,12 @@ bcrypt 加密/验证（`generate_password_hash` / `check_password_hash`）。
 ## file_utils.py
 
 - `allowed_avatar_file(filename)`：扩展名白名单校验
-- `save_avatar_file(file)`：生成 `uuid.hex.{ext}` 安全文件名并保存
+- `get_file_mime(filename)`：扩展名 → MIME
+- `save_avatar_file(file)`：生成 `uuid.hex.{ext}` 安全文件名并保存。**扩展名从 `file.filename`（raw）取**（不经 `secure_filename`），避免纯非 ASCII 文件名（如 "张老三.png"）扩展名丢失；非允许列表的扩展名抛 `ValueError`
 - `get_avatar_file_path(filename)`：返回完整物理路径
-- `generate_avatar_token(user_id, fid)`：JWT Avatar Token
-- `decode_avatar_token(token)`：解码取 fid
+- `generate_file_token(fid)`：JWT File Token（统一，无需 user_id）
+- `decode_file_token(token)`：解码取 fid
+- `generate_avatar_token` / `decode_avatar_token`：已弃用，统一改用 `file_token`
 
 ## ai_provider.py
 
@@ -683,6 +780,14 @@ User (1) → ConversationSession (N) → Message (N) ← Route (N)
 User (1) → RoleplaySession (N) ← RoleplayMessage (N)
 RoleplayCharacter (1) → RoleplayCharacterDetail (1)
 RoleplayCharacter (1) ← Route (N)  (via Message FK)
+TravelRecommendation (1)
+  ├── RecommendationPlayer (N)
+  ├── RecommendationHero (N)
+  ├── RecommendationEsportsInfo (N)
+  ├── RecommendationFood (N)
+  ├── RecommendationTravelTip (N)
+  ├── RecommendationTask (N)
+  └── RecommendationRoute (N)
 ```
 
 ---
@@ -781,6 +886,24 @@ curl -X POST http://localhost:5000/agent/roleplay/message/send/1 \
   -H "Content-Type: application/json" \
   -d '{"content": "你好，推荐一些 RPG 游戏"}' \
   -N
+```
+
+## 旅行推荐（首页地图）
+
+```bash
+# 公共读，无需认证
+curl http://localhost:5000/travel/recommendation
+curl http://localhost:5000/travel/recommendation/1
+
+# 管理端（需 admin token）
+curl -H "Authorization: Bearer <admin_token>" \
+  http://localhost:5000/admin/travel/recommendation?page=1&page_size=10
+```
+
+灌库：
+```bash
+flask init-db  # 首次需建表
+python scripts/seed_travel_recommendations.py  # 从 cities.json 灌 6 条
 ```
 
 ---

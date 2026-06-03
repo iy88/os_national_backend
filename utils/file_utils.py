@@ -28,12 +28,22 @@ def get_file_mime(filename: str) -> str:
 
 
 def save_avatar_file(file) -> str:
-    """保存头像文件，返回 secure_filename"""
+    """保存头像文件，返回 secure_filename。
+    扩展名从原始 file.filename（raw）取，不经 secure_filename。
+    若扩展名不在 Config.ALLOWED_AVATAR_EXTENSIONS 中，抛 ValueError，
+    让外层 caller（api/file.py、api/roleplay_admin.py）返回 400，
+    不静默写脏数据。
+    """
     if not os.path.exists(Config.UPLOAD_FOLDER):
         os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 
-    original_filename = secure_filename(file.filename)
-    ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else 'jpg'
+    raw_name = file.filename or ''
+    if '.' not in raw_name:
+        raise ValueError(f'File has no extension: {raw_name!r}')
+    ext = raw_name.rsplit('.', 1)[1].lower()
+    if ext not in Config.ALLOWED_AVATAR_EXTENSIONS:
+        raise ValueError(f'Extension {ext!r} not in allowed list')
+
     secure_filename_str = f"{uuid.uuid4().hex}.{ext}"
 
     file_path = os.path.join(Config.UPLOAD_FOLDER, secure_filename_str)

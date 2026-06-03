@@ -41,6 +41,12 @@
     - [28. Dashboard 统计](#28-dashboard-统计)
 - [工具接口](#工具接口)
     - [29. 健康检查](#29-健康检查)
+- [Travel Recommendation 接口（旅行推荐）](#travel-recommendation-接口旅行推荐)
+    - [30. 获取旅行推荐列表（公共读，匿名）](#30-获取旅行推荐列表公共读匿名)
+    - [31. 获取单条旅行推荐详情（公共读，匿名）](#31-获取单条旅行推荐详情公共读匿名)
+- [Travel Recommendation 后台管理接口](#travel-recommendation-后台管理接口)
+    - [32. 主表 CRUD](#32-主表-crud)
+    - [33. 子表 CRUD](#33-子表-crud)
 
 ## 用户认证
 
@@ -1697,4 +1703,132 @@ Authorization: Bearer <token>
 {
   "status": "ok"
 }
+```
+
+---
+
+## Travel Recommendation 接口（旅行推荐）
+
+首页 SVG 地图数据 + 后台管理。数据从 `os_national_frontend/src/data/cities.json` 迁移而来，原静态 JSON 字段被拆为 8 张表，公共读 API 返回结构与原 JSON 兼容（驼峰字段名 `eSportsInfo` / `travelTips` / `displayName` / `center` 保留）。
+
+### 30. 获取旅行推荐列表（公共读，匿名）
+
+- **URL**: `GET /travel/recommendation`
+- **描述**: 获取所有启用的旅行推荐（首页地图 + 城市详情共用）
+- **认证**: 无需认证
+
+**响应**:
+
+```json
+{
+  "success": true,
+  "recommendations": [
+    {
+      "id": 1,
+      "name": "西安 · 长安荣耀之旅",
+      "displayName": "西安",
+      "center": [108.95, 34.27],
+      "players": [
+        {"name": "一诺（徐必成）", "hero": "公孙离", "team": "成都AG超玩会", "desc": "..."}
+      ],
+      "heroes": [...],
+      "eSportsInfo": ["🏆 ...", "..."],
+      "food": ["..."],
+      "travelTips": ["..."],
+      "tasks": [{"title": "...", "desc": "...", "reward": "..."}],
+      "recommendedRoutes": ["..."]
+    }
+  ]
+}
+```
+
+只返回 `is_active=1` 的记录，按 `id ASC` 排序（与 cities.json 的 key 顺序一致）。
+
+### 31. 获取单条旅行推荐详情（公共读，匿名）
+
+- **URL**: `GET /travel/recommendation/<int:rec_id>`
+- **认证**: 无需认证
+- **响应**: 成功返回 `{success, recommendation: {...}}`；`is_active=0` 或不存在返回 404。
+
+---
+
+## Travel Recommendation 后台管理接口
+
+管理 1 张主表 + 7 张子表。所有 endpoint 需要 **Bearer Token + admin 角色**。
+
+### 32. 主表 CRUD
+
+#### 32.1 列表
+
+- `GET /admin/travel/recommendation?page=1&page_size=10&search=`
+- 支持模糊搜索 `name` / `display_name`
+- 返回 `{success, recommendations, total, page, page_size}`，默认按 `id DESC`
+
+#### 32.2 详情
+
+- `GET /admin/travel/recommendation/<int:rec_id>`
+- 返回 `{success, recommendation}`，含全部 7 张子表（snake_case 字段）
+
+#### 32.3 创建
+
+- `POST /admin/travel/recommendation`
+- **必填**: `name`, `display_name`, `center_lon`, `center_lat`
+- **可选**: `is_active`（默认 true）
+- **子表字段**（任选）: `players[]`, `heroes[]`, `esports_info[]`, `foods[]`, `travel_tips[]`, `tasks[]`, `routes[]`
+- 同一 `display_name` 重复时返回 409
+- 响应 201 + `{success, recommendation}`
+
+#### 32.4 整条更新
+
+- `PUT /admin/travel/recommendation/<int:rec_id>`
+- 仅更新 body 中**明确包含的字段**；子表数组若传入则**整体替换**（缺失则保留现有）
+- 改 `display_name` 触发唯一约束校验
+
+#### 32.5 删除
+
+- `DELETE /admin/travel/recommendation/<int:rec_id>`
+- FK ON DELETE CASCADE 自动清空 7 张子表
+
+### 33. 子表 CRUD
+
+7 张子表统一模式：`/admin/travel/recommendation/<int:rec_id>/<resource>[/<int:item_id>]`
+
+| 子表 | resource 路径 | 列表字段 |
+|------|-------------|----------|
+| 推荐选手 | `players` | `[{id, recommendation_id, name, hero, team, description, display_order}]` |
+| 推荐英雄 | `heroes` | `[{id, recommendation_id, name, role, style, description, display_order}]` |
+| 电竞资讯 | `esports_info` | `[{id, recommendation_id, content, display_order}]` |
+| 美食 | `foods` | `[{id, recommendation_id, content, display_order}]` |
+| 旅行贴士 | `travel_tips` | `[{id, recommendation_id, content, display_order}]` |
+| 打卡任务 | `tasks` | `[{id, recommendation_id, title, description, reward, display_order}]` |
+| 推荐路线 | `routes` | `[{id, recommendation_id, content, display_order}]` |
+
+每个 resource 支持 4 个操作：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/admin/travel/recommendation/<rid>/<resource>` | 列出该推荐下所有子项（按 display_order ASC） |
+| `POST` | `/admin/travel/recommendation/<rid>/<resource>` | 新增一个子项；`display_order` 不传则自动取 max+1 |
+| `PUT` | `/admin/travel/recommendation/<rid>/<resource>/<item_id>` | 局部更新，只改 body 中包含的字段 |
+| `DELETE` | `/admin/travel/recommendation/<rid>/<resource>/<item_id>` | 删除单条 |
+
+**校验**：
+
+- `rid` 不存在 → 404 `Recommendation not found`
+- `item_id` 不属于该 `rid` → 404 `Resource not found`
+- 必填字段缺失（`name` / `title` / `content`）→ 400
+
+**示例**：
+
+```bash
+# 新增一个 player
+curl -X POST /admin/travel/recommendation/1/players \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "一诺", "hero": "公孙离", "team": "成都AG", "description": "..."}'
+
+# 删除
+curl -X DELETE /admin/travel/recommendation/1/players/5 \
+  -H "Authorization: Bearer <admin_token>"
+```
 ```
