@@ -258,6 +258,16 @@ def delete_recommendation(_, rec_id):
 
 # ============ 子表批量替换辅助（主表 create/update 共用）============
 
+def _extract_content(val):
+    """从 bullet-list 值中取 content 字符串。
+    前端通过主表 PUT 传入完整对象 {content, id, ...}，
+    通过子表 POST 传入字符串。
+    """
+    if isinstance(val, dict):
+        return str(val.get('content', ''))
+    return str(val)
+
+
 def _bulk_create_children(rec: TravelRecommendation, data: dict):
     for i, p in enumerate(data.get('players') or []):
         rec.players.append(RecommendationPlayer(
@@ -277,15 +287,15 @@ def _bulk_create_children(rec: TravelRecommendation, data: dict):
         ))
     for i, e in enumerate(data.get('esports_info') or []):
         rec.esports_info.append(RecommendationEsportsInfo(
-            content=str(e), display_order=i,
+            content=_extract_content(e), display_order=i,
         ))
     for i, f in enumerate(data.get('foods') or []):
         rec.foods.append(RecommendationFood(
-            content=str(f), display_order=i,
+            content=_extract_content(f), display_order=i,
         ))
     for i, t in enumerate(data.get('travel_tips') or []):
         rec.travel_tips.append(RecommendationTravelTip(
-            content=str(t), display_order=i,
+            content=_extract_content(t), display_order=i,
         ))
     for i, t in enumerate(data.get('tasks') or []):
         rec.tasks.append(RecommendationTask(
@@ -296,7 +306,7 @@ def _bulk_create_children(rec: TravelRecommendation, data: dict):
         ))
     for i, r in enumerate(data.get('routes') or []):
         rec.routes.append(RecommendationRoute(
-            content=str(r), display_order=i,
+            content=_extract_content(r), display_order=i,
         ))
 
 
@@ -329,21 +339,21 @@ def _replace_children(rec: TravelRecommendation, data: dict):
         db.session.flush()
         for i, e in enumerate(data.get('esports_info') or []):
             rec.esports_info.append(RecommendationEsportsInfo(
-                content=str(e), display_order=i,
+                content=_extract_content(e), display_order=i,
             ))
     if 'foods' in data:
         RecommendationFood.query.filter_by(recommendation_id=rec.id).delete()
         db.session.flush()
         for i, f in enumerate(data.get('foods') or []):
             rec.foods.append(RecommendationFood(
-                content=str(f), display_order=i,
+                content=_extract_content(f), display_order=i,
             ))
     if 'travel_tips' in data:
         RecommendationTravelTip.query.filter_by(recommendation_id=rec.id).delete()
         db.session.flush()
         for i, t in enumerate(data.get('travel_tips') or []):
             rec.travel_tips.append(RecommendationTravelTip(
-                content=str(t), display_order=i,
+                content=_extract_content(t), display_order=i,
             ))
     if 'tasks' in data:
         RecommendationTask.query.filter_by(recommendation_id=rec.id).delete()
@@ -360,7 +370,7 @@ def _replace_children(rec: TravelRecommendation, data: dict):
         db.session.flush()
         for i, r in enumerate(data.get('routes') or []):
             rec.routes.append(RecommendationRoute(
-                content=str(r), display_order=i,
+                content=_extract_content(r), display_order=i,
             ))
 
 
