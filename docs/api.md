@@ -1756,6 +1756,8 @@ Authorization: Bearer <token>
 
 管理 1 张主表 + 7 张子表。所有 endpoint 需要 **Bearer Token + admin 角色**。
 
+**响应公共字段**：所有返回的推荐和子项都带 `createdAt` / `updatedAt`（ISO8601 + `Z` 后缀，UTC）。更新时由 SQLAlchemy `onupdate` 自动刷新 `updated_at` 字段（无需调用方手动传）。
+
 ### 32. 主表 CRUD
 
 #### 32.1 列表
@@ -1763,11 +1765,21 @@ Authorization: Bearer <token>
 - `GET /admin/travel/recommendation?page=1&page_size=10&search=`
 - 支持模糊搜索 `name` / `display_name`
 - 返回 `{success, recommendations, total, page, page_size}`，默认按 `id DESC`
+- 列表项结构（snake_case 字段 + camelCase 时间戳）：
+  ```json
+  {
+    "id": 1, "name": "...", "display_name": "...", "center_lon": 108.95, "center_lat": 34.27,
+    "is_active": true,
+    "players": [...], "heroes": [...], "esports_info": [...], "foods": [...],
+    "travel_tips": [...], "tasks": [...], "routes": [...],
+    "createdAt": "2026-06-03T12:00:00Z", "updatedAt": "2026-06-03T12:34:56Z"
+  }
+  ```
 
 #### 32.2 详情
 
 - `GET /admin/travel/recommendation/<int:rec_id>`
-- 返回 `{success, recommendation}`，含全部 7 张子表（snake_case 字段）
+- 返回 `{success, recommendation}`，含全部 7 张子表（同 32.1 的结构）
 
 #### 32.3 创建
 
@@ -1776,13 +1788,14 @@ Authorization: Bearer <token>
 - **可选**: `is_active`（默认 true）
 - **子表字段**（任选）: `players[]`, `heroes[]`, `esports_info[]`, `foods[]`, `travel_tips[]`, `tasks[]`, `routes[]`
 - 同一 `display_name` 重复时返回 409
-- 响应 201 + `{success, recommendation}`
+- 响应 201 + `{success, recommendation}`，`createdAt` = `updatedAt` = 创建时刻
 
 #### 32.4 整条更新
 
 - `PUT /admin/travel/recommendation/<int:rec_id>`
 - 仅更新 body 中**明确包含的字段**；子表数组若传入则**整体替换**（缺失则保留现有）
 - 改 `display_name` 触发唯一约束校验
+- 响应中 `updatedAt` 自动刷新为最新值；`createdAt` 保持不变
 
 #### 32.5 删除
 
@@ -1793,13 +1806,15 @@ Authorization: Bearer <token>
 
 7 张子表统一模式：`/admin/travel/recommendation/<int:rec_id>/<resource>[/<int:item_id>]`
 
-| 子表 | resource 路径 | 列表字段 |
+每个返回的子项都带 `createdAt` / `updatedAt`（格式同主表）。`PUT` 更新子项时 `updatedAt` 自动刷新。
+
+| 子表 | resource 路径 | 列表字段（除 createdAt / updatedAt 外） |
 |------|-------------|----------|
-| 推荐选手 | `players` | `[{id, recommendation_id, name, hero, team, description, display_order}]` |
-| 推荐英雄 | `heroes` | `[{id, recommendation_id, name, role, style, description, display_order}]` |
-| 电竞资讯 | `esports_info` | `[{id, recommendation_id, content, display_order}]` |
-| 美食 | `foods` | `[{id, recommendation_id, content, display_order}]` |
-| 旅行贴士 | `travel_tips` | `[{id, recommendation_id, content, display_order}]` |
+| 推荐选手 | `players` | `id, recommendation_id, name, hero, team, description, display_order` |
+| 推荐英雄 | `heroes` | `id, recommendation_id, name, role, style, description, display_order` |
+| 电竞资讯 | `esports_info` | `id, recommendation_id, content, display_order` |
+| 美食 | `foods` | `id, recommendation_id, content, display_order` |
+| 旅行贴士 | `travel_tips` | `id, recommendation_id, content, display_order` |
 | 打卡任务 | `tasks` | `[{id, recommendation_id, title, description, reward, display_order}]` |
 | 推荐路线 | `routes` | `[{id, recommendation_id, content, display_order}]` |
 

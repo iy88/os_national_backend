@@ -6,7 +6,9 @@ from api.file import file_bp
 from api.roleplay import roleplay_bp
 from api.roleplay_admin import roleplay_admin_bp
 from api.route import route_bp
+from api.travel import travel_bp
+from api.travel_admin import travel_admin_bp
 from api.user import user_bp
 
 __all__ = ['user_bp', 'email_bp', 'file_bp', 'agent_bp', 'route_bp', 'roleplay_bp', 'admin_bp', 'roleplay_admin_bp',
-           'dashboard_bp']
+           'dashboard_bp', 'travel_bp', 'travel_admin_bp']
