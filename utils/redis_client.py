@@ -352,6 +352,41 @@ def clear_rp_ai_session_id(uid: int, rid: int):
     redis_client.delete(_rp_stream_key(uid, rid, 'ai_session'))
 
 
+# ============ Producer kill flag（清空对话历史时使用）============
+
+ROUTE_KILL_FLAG_TTL = 60  # 1 分钟自动过期
+
+
+def set_route_kill_flag(sid: int):
+    """设置路线规划对话的 producer 终止标记。"""
+    redis_client.setex(f'route_kill:{sid}', ROUTE_KILL_FLAG_TTL, '1')
+
+
+def check_route_kill_flag(sid: int) -> bool:
+    """检查路线规划 producer 是否应终止。"""
+    return redis_client.exists(f'route_kill:{sid}') == 1
+
+
+def clear_route_kill_flag(sid: int):
+    """清除路线规划 producer 终止标记。"""
+    redis_client.delete(f'route_kill:{sid}')
+
+
+def set_rp_kill_flag(uid: int, rid: int):
+    """设置角色对话的 producer 终止标记。"""
+    redis_client.setex(f'rp_kill:{uid}:{rid}', ROUTE_KILL_FLAG_TTL, '1')
+
+
+def check_rp_kill_flag(uid: int, rid: int) -> bool:
+    """检查角色对话 producer 是否应终止。"""
+    return redis_client.exists(f'rp_kill:{uid}:{rid}') == 1
+
+
+def clear_rp_kill_flag(uid: int, rid: int):
+    """清除角色对话 producer 终止标记。"""
+    redis_client.delete(f'rp_kill:{uid}:{rid}')
+
+
 # ============ Token 失效机制 ============
 
 def get_token_valid_since() -> float | None:

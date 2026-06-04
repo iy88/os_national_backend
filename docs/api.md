@@ -741,6 +741,34 @@ Content-Type: application/json
 
 ---
 
+### 15a. 清空路线规划会话历史
+
+- **URL**: `DELETE /api/agent/travel-route-plan/chat/clear/<int:sid>`
+- **描述**: 删除当前用户指定会话的所有消息与会话本身。会先 set producer 终止标记让正在流式输出的 producer 主动退出（最多浪费一个 chunk），再 CASCADE 删除 session + messages，最后清理 Redis runtime / ai_session / kill flag
+- **认证**: 需要 Bearer Token（user role）
+- **返回**: `application/json`
+
+**成功响应**:
+
+```json
+{
+  "success": true,
+  "message": "Chat history cleared",
+  "cleared_sid": 1
+}
+```
+
+**错误响应**:
+
+| 状态码 | 消息 |
+|--------|------|
+| 401 | 未认证 |
+| 404 | `Session not found`（会话不存在或不属于当前用户） |
+
+**注意事项**: 若清空时有 producer 正在流式输出，前端可能收不到 `done` 事件（producer 在 chunk 边界主动 break），应作为「流被取消」处理。
+
+---
+
 ### 15. 发送消息（SSE 流式）
 
 - **URL**: `POST /api/agent/travel-route-plan/message`
@@ -1348,6 +1376,34 @@ Authorization: Bearer <token>
   "message": "Character not found"
 }
 ```
+
+---
+
+### 24a. 清空角色对话历史
+
+- **URL**: `DELETE /api/agent/roleplay/message/clear/<int:rid>`
+- **描述**: 删除当前用户对指定角色的所有消息与会话本身。会先 set producer 终止标记让正在流式输出的 producer 主动退出，再删除 `RoleplayMessage` + `RoleplaySession`（无 FK 关系需分别删），最后清理 Redis runtime / ai_session / kill flag
+- **认证**: 需要 Bearer Token（user role）
+- **返回**: `application/json`
+
+**成功响应**:
+
+```json
+{
+  "success": true,
+  "message": "Chat history cleared",
+  "cleared_rid": 1
+}
+```
+
+**错误响应**:
+
+| 状态码 | 消息 |
+|--------|------|
+| 401 | 未认证 |
+| 404 | `Character not found`（角色不存在） |
+
+**幂等性**: 重复调用同一 rid 不会报错（DB 删除空集合是 no-op，Redis 清理幂等）。
 
 ---
 

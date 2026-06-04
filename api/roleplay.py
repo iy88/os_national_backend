@@ -31,6 +31,9 @@ from utils.redis_client import (
     get_rp_ai_session_id,
     set_rp_ai_session_id,
     clear_rp_ai_session_id,
+    check_rp_kill_flag,
+    set_rp_kill_flag,
+    clear_rp_kill_flag,
     try_acquire_regen_lock,
     release_regen_lock,
     refresh_regen_lock,
@@ -166,6 +169,9 @@ def _run_stream_producer(
         def produce(active_messages: list, active_session_id: str | None, is_resume: bool = False):
             for chunk in ai_provider.chat_stream(active_messages, sid=mid, resume=is_resume,
                                                  session_id=active_session_id):
+                # 用户清空对话历史时，set 终止标记 → 在 chunk 边界主动 break
+                if check_rp_kill_flag(uid, rid):
+                    break
                 append_rp_stream_content(mid, chunk)
                 append_rp_stream_event(mid, 'content', content=chunk)
                 refresh_rp_stream_producer_lock(uid, rid)
@@ -647,3 +653,37 @@ def list_messages(current_user_id, rid):
         } for msg in messages],
         'incompleteMid': incomplete_mid
     })
+
+
+@roleplay_bp.route('/message/clear/<int:rid>', methods=['DELETE'])
+@token_required
+def clear_message_history(current_user_id, rid):
+    """清空当前用户对某角色的所有历史消息 + 会话。
+
+    设计：set 终止标记后**立即**返回（不放 sleep），producer 自己在 finally
+    块里 release lock + clear stream_marker。
+    """
+    character = RoleplayCharacter.query.get(rid)
+    if not character:
+        return jsonify({'success': False, 'message': 'Character not found'}), 404
+
+    incomplete_mid = get_rp_stream_mid(current_user_id, rid)
+
+    # 1) set 终止标记 — producer 在下一个 chunk 边界 break；其 finally 块
+    #    自己 release producer lock + clear stream_marker，无需 clear 端重复。
+    set_rp_kill_flag(current_user_id, rid)
+
+    # 2) DB delete — RoleplayMessage 无 FK 到 RoleplaySession，需分别删；
+    #    Roleplay 场景 PK 是 (uid, rid)，必须带 uid（路由 sid 全局唯一不需要）
+    RoleplayMessage.query.filter_by(uid=current_user_id, rid=rid).delete(synchronize_session=False)
+    RoleplaySession.query.filter_by(uid=current_user_id, rid=rid).delete()
+    db.session.commit()
+
+    # 3) Redis cleanup（producer 的 finally 已清 stream_marker；这里补 ai_session /
+    #    runtime / kill flag）。任何一个 Redis 操作失败 → 直接抛错返回 500。
+    clear_rp_ai_session_id(current_user_id, rid)
+    if incomplete_mid:
+        clear_rp_stream_runtime(incomplete_mid)
+    clear_rp_kill_flag(current_user_id, rid)
+
+    return jsonify({'success': True, 'message': 'Chat history cleared', 'cleared_rid': rid})
