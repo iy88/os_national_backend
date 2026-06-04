@@ -403,15 +403,100 @@ class TencentADPGenerationProvider(AIProvider):
         return None
 
 
+class TencentYuanqiProvider(AIProvider):
+    """腾讯元器 AI Provider。流式 SSE，每次发送完整 messages（无 session 缓存）。
+
+    接口：https://yuanqi.tencent.com/openapi/v1/agent/chat/completions
+    - Auth: Authorization: Bearer <appkey>
+    - Body: assistant_id, user_id, stream, messages[]
+    - messages[].content 是 [{type, text}] 列表（OpenAI 风格，无 system role）
+    - 流式: SSE data: {json}, 终止 data: [DONE]
+    - 无 session_id 概念 —— 每次必须发送完整历史
+    """
+
+    BASE_URL = 'https://yuanqi.tencent.com/openapi/v1/agent/chat/completions'
+
+    def __init__(self, api_key: str, assistant_id: str):
+        self.api_key = api_key
+        self.assistant_id = assistant_id
+        self._last_session_id = None  # 保留字段以满足接口；Yuanqi 不支持 session
+
+    def chat_stream(self, messages: list, sid: int, resume: bool = False, session_id: str | None = None):
+        body = {
+            'assistant_id': self.assistant_id,
+            'user_id': f'user_{sid}',
+            'stream': True,
+            'messages': self._convert_messages(messages),
+        }
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+        }
+        with requests.post(
+            self.BASE_URL, headers=headers, json=body, stream=True, timeout=120
+        ) as resp:
+            if resp.status_code != 200:
+                raise Exception(
+                    f'Yuanqi API error {resp.status_code}: {resp.text[:300]}'
+                )
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                line = line.decode('utf-8') if isinstance(line, bytes) else line
+                if not line.startswith('data: '):
+                    continue
+                data_str = line[6:]
+                if data_str.strip() == '[DONE]':
+                    break
+                try:
+                    evt = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                for choice in evt.get('choices', []):
+                    delta = choice.get('delta') or {}
+                    content = delta.get('content')
+                    if content:
+                        yield content
+                    # tool_calls 不单独 yield —— 工具结果在后续 step
+                    # 以 assistant content 形式回来
+
+    def chat_stream_resume(self, messages: list, sid: int, completed_content: str = '',
+                           session_id: str | None = None):
+        # Yuanqi 无 session —— 重新流式全量 history；completed_content 忽略
+        yield from self.chat_stream(messages, sid=sid, resume=True, session_id=None)
+
+    def get_last_session_id(self) -> str | None:
+        return None
+
+    def _convert_messages(self, messages: list) -> list:
+        """[{role, content_str}] → Yuanqi [{role, content: [{type, text}]}]。
+        Yuanqi 无 system role，system prompt 拼到第一条 user 消息前。
+        """
+        converted = []
+        sys_prefix = None
+        for m in messages:
+            if m.get('role') == 'system':
+                sys_prefix = m.get('content', '')
+                continue
+            converted.append({
+                'role': m['role'],
+                'content': [{'type': 'text', 'text': m.get('content', '')}]
+            })
+        if sys_prefix and converted and converted[0]['role'] == 'user':
+            converted[0]['content'].insert(0, {'type': 'text', 'text': f'[系统设定] {sys_prefix}'})
+        return converted
+
+
 def get_ai_provider(provider_name: str, api_key: str, app_id: str = None, model: str = None) -> AIProvider:
     """
     工厂函数，获取 AI Provider 实例
 
     Args:
-        provider_name: provider 名称 (dashscope / tencent_adp)
-        api_key: API 密钥（DashScope / Tencent MaaS 需要）
-        app_id: APP ID（DashScope Application API / Tencent ADP Agent 需要）
-        model: 模型名称（DashScope Generation API / Tencent MaaS 需要）
+        provider_name: provider 名称 (dashscope / tencent_adp / tencent_yuanqi)
+        api_key: API 密钥（DashScope / Tencent MaaS / Yuanqi 需要；Yuanqi 分支
+                会从 Config.YUANQI_API_KEY 重新读取，忽略此参数）
+        app_id: APP ID（DashScope / ADP Agent / Yuanqi assistant_id）
+        model: 模型名称（DashScope Generation / MaaS 需要；Yuanqi 不支持）
 
     Returns:
         AIProvider 实例
@@ -430,5 +515,9 @@ def get_ai_provider(provider_name: str, api_key: str, app_id: str = None, model:
             return TencentADPGenerationProvider(api_key, model)
         else:
             raise ValueError('Tencent ADP provider requires app_id or model')
+    elif provider_name == 'tencent_yuanqi':
+        if not app_id:
+            raise ValueError('tencent_yuanqi provider requires app_id (assistant_id)')
+        return TencentYuanqiProvider(api_key=api_key, assistant_id=app_id)
     else:
         raise ValueError(f'Unknown AI provider: {provider_name}')

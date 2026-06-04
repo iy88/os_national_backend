@@ -52,7 +52,7 @@ class Config:
     # AI Provider
     AI_PROVIDER = os.getenv('AI_PROVIDER', 'dashscope')
     AI_API_KEY = os.getenv('AI_API_KEY')
-    AI_APP_ID = os.getenv('AI_APP_ID')
+    ROUTE_APP_ID = os.getenv('ROUTE_APP_ID')  # route-plan agent id (DashScope/ADP)
     AI_TITLE_MODEL = os.getenv('AI_TITLE_MODEL', 'qwen3.5-plus')
 
     # Roleplay App IDs
@@ -65,4 +65,21 @@ class Config:
         'game_expert': ROLEPLAY_APP_ID_GAME_EXPERT,
         'esports_player': ROLEPLAY_APP_ID_ESPORTS_PLAYER,
         'game_hero': ROLEPLAY_APP_ID_GAME_HERO,
+    }
+
+    # === Tencent Yuanqi (腾讯元器) ===
+    # 每个智能体都有独立的 (app_id, app_key) 对，1 route-plan + 3 roleplay
+    YUANQI_ROUTE_APP_KEY = os.getenv('YUANQI_ROUTE_APP_KEY')
+    YUANQI_ROUTE_APP_ID = os.getenv('YUANQI_ROUTE_APP_ID')
+    YUANQI_APP_KEY_GAME_EXPERT = os.getenv('YUANQI_APP_KEY_GAME_EXPERT')
+    YUANQI_APP_KEY_ESPORTS_PLAYER = os.getenv('YUANQI_APP_KEY_ESPORTS_PLAYER')
+    YUANQI_APP_KEY_GAME_HERO = os.getenv('YUANQI_APP_KEY_GAME_HERO')
+    YUANQI_APP_ID_GAME_EXPERT = os.getenv('YUANQI_APP_ID_GAME_EXPERT')
+    YUANQI_APP_ID_ESPORTS_PLAYER = os.getenv('YUANQI_APP_ID_ESPORTS_PLAYER')
+    YUANQI_APP_ID_GAME_HERO = os.getenv('YUANQI_APP_ID_GAME_HERO')
+
+    YUANQI_APP_MAP = {
+        'game_expert':    {'app_id': YUANQI_APP_ID_GAME_EXPERT,    'app_key': YUANQI_APP_KEY_GAME_EXPERT},
+        'esports_player': {'app_id': YUANQI_APP_ID_ESPORTS_PLAYER, 'app_key': YUANQI_APP_KEY_ESPORTS_PLAYER},
+        'game_hero':      {'app_id': YUANQI_APP_ID_GAME_HERO,      'app_key': YUANQI_APP_KEY_GAME_HERO},
     }

@@ -130,10 +130,16 @@ def _finalize_error_result(sid: int, mid: int, current_user_id: int, err: Except
 def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_messages: list, ai_session_id: str | None, regenerate_mid: int | None = None):
     """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件。"""
     with app.app_context():
+        # Yuanqi 模式用独立的 YUANQI_ROUTE_APP_ID + YUANQI_ROUTE_APP_KEY；其他 provider 沿用 ROUTE_APP_ID + AI_API_KEY
+        is_yuanqi = Config.AI_PROVIDER == 'tencent_yuanqi'
+        route_app_id = Config.YUANQI_ROUTE_APP_ID if is_yuanqi else Config.ROUTE_APP_ID
+        provider_api_key = (
+            Config.YUANQI_ROUTE_APP_KEY if is_yuanqi else Config.AI_API_KEY
+        )
         ai_provider = get_ai_provider(
             Config.AI_PROVIDER,
-            Config.AI_API_KEY,
-            Config.AI_APP_ID
+            provider_api_key,
+            route_app_id
         )
 
         set_stream_state(mid, 'running')
@@ -189,13 +195,18 @@ def _run_stream_producer(app, sid: int, mid: int, current_user_id: int, base_mes
                         f"助手：{full_content.strip()}"
                     )
                     title_gen_messages = [{"role": "user", "content": title_prompt}]
+                    title_provider_name = (
+                        'dashscope' if Config.AI_PROVIDER == 'tencent_yuanqi'
+                        else Config.AI_PROVIDER
+                    )
+                    # Title 用 AI_API_KEY（dashscope 和 adp 的 Generation provider 都用它）
                     title_provider = get_ai_provider(
-                        Config.AI_PROVIDER,
+                        title_provider_name,
                         Config.AI_API_KEY,
                         model=Config.AI_TITLE_MODEL
                     )
                     generated_title = title_provider.chat_non_stream(title_gen_messages).strip()
-                    if generated_title and 10 <= len(generated_title) <= 18:
+                    if generated_title:
                         session_row = ConversationSession.query.filter_by(sid=sid).first()
                         if session_row:
                             session_row.title = generated_title

@@ -145,15 +145,16 @@ def _run_stream_producer(
         mid: int,
         base_messages: list,
         app_id: str,
+        provider_api_key: str,
         ai_session_id: str | None = None,
         fallback_messages: list | None = None,
         regenerate_mid: int | None = None
 ):
-    """后台生产者：唯一拉取 LLM 流并写入 Redis Stream 事件"""
+    """后台生产者：唯一拉取 LLM 流并写入 Redis Stream事件"""
     with app.app_context():
         ai_provider = get_ai_provider(
             Config.AI_PROVIDER,
-            Config.AI_API_KEY,
+            provider_api_key,
             app_id=app_id
         )
 
@@ -236,6 +237,7 @@ def _ensure_stream_producer(
         mid: int,
         messages: list,
         app_id: str,
+        provider_api_key: str,
         ai_session_id: str | None = None,
         fallback_messages: list | None = None,
         regenerate_mid: int | None = None
@@ -250,7 +252,7 @@ def _ensure_stream_producer(
 
     producer = threading.Thread(
         target=_run_stream_producer,
-        args=(app, uid, rid, mid, messages, app_id, ai_session_id, fallback_messages, regenerate_mid),
+        args=(app, uid, rid, mid, messages, app_id, provider_api_key, ai_session_id, fallback_messages, regenerate_mid),
         daemon=True
     )
     producer.start()
@@ -449,9 +451,20 @@ def send_message(current_user_id, rid):
     content = (data.get('content') or '').strip()
     regenerate_mid = data.get('regenerateMid')
 
-    app_id = Config.ROLEPLAY_APP_ID_MAP.get(character.type)
-    if not app_id:
-        return jsonify({'success': False, 'message': 'Character type not configured'}), 500
+    # Yuanqi 模式用独立的 YUANQI_APP_MAP (app_id+app_key 一一绑定)；
+    # 其他 provider 沿用 ROLEPLAY_APP_ID_MAP + AI_API_KEY
+    is_yuanqi = Config.AI_PROVIDER == 'tencent_yuanqi'
+    if is_yuanqi:
+        app_cfg = Config.YUANQI_APP_MAP.get(character.type)
+        if not app_cfg or not app_cfg.get('app_id') or not app_cfg.get('app_key'):
+            return jsonify({'success': False, 'message': 'Character type not configured'}), 500
+        app_id = app_cfg['app_id']
+        provider_api_key = app_cfg['app_key']
+    else:
+        app_id = Config.ROLEPLAY_APP_ID_MAP.get(character.type)
+        provider_api_key = Config.AI_API_KEY
+        if not app_id:
+            return jsonify({'success': False, 'message': 'Character type not configured'}), 500
 
     ai_session_id = get_rp_ai_session_id(current_user_id, rid)
 
@@ -512,6 +525,7 @@ def send_message(current_user_id, rid):
                 assistant_mid,
                 messages,
                 app_id,
+                provider_api_key,
                 ai_session_id=None,
                 fallback_messages=None,
                 regenerate_mid=regenerate_mid
@@ -544,6 +558,7 @@ def send_message(current_user_id, rid):
                     existing_mid,
                     messages,
                     app_id,
+                    provider_api_key,
                     ai_session_id=ai_session_id,
                     fallback_messages=messages if ai_session_id else None
                 )
@@ -599,6 +614,7 @@ def send_message(current_user_id, rid):
         assistant_mid,
         messages,
         app_id,
+        provider_api_key,
         ai_session_id=ai_session_id if existing_session else None,
         fallback_messages=fallback_messages
     )
