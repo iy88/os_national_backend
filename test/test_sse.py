@@ -1,9 +1,15 @@
 import json
+import os
 from datetime import datetime
 
 import requests
 
-TOKEN = "REDACTED_JWT"
+# token 从环境变量读取，不要把真实凭据写进仓库
+# 取值：调用登录接口，复制响应中的 token 字段
+TOKEN = os.getenv("TEST_TOKEN")
+if not TOKEN:
+    raise SystemExit("请先设置环境变量 TEST_TOKEN")
+
 URL = "http://127.0.0.1:8080/agent/travel-route-plan/message"
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",

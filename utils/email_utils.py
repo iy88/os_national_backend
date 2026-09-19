@@ -28,7 +28,7 @@ def generate_verification_code() -> str:
 #     sender = current_app.config['SMTP_SENDER']
 #     sender_name = current_app.config.get('SMTP_SENDER_NAME', '城竞共生')
 #     msg['From'] = formataddr((Header(sender_name, 'utf-8').encode(), sender))
-#     msg['To'] = 'REDACTED_EMAIL'
+#     msg['To'] = 'user@example.com'
 #
 #     html_content = f'''
 #     <html>
@@ -48,7 +48,7 @@ def generate_verification_code() -> str:
 #                 server.login(current_app.config['SMTP_USERNAME'],
 #                              current_app.config['SMTP_PASSWORD'])
 #                 server.sendmail(current_app.config['SMTP_SENDER'],
-#                                 ['REDACTED_EMAIL'], msg.as_string())
+#                                 ['user@example.com'], msg.as_string())
 #         else:
 #             with smtplib.SMTP(current_app.config['SMTP_SERVER'],
 #                               current_app.config['SMTP_PORT']) as server:
@@ -56,7 +56,7 @@ def generate_verification_code() -> str:
 #                 server.login(current_app.config['SMTP_USERNAME'],
 #                              current_app.config['SMTP_PASSWORD'])
 #                 server.sendmail(current_app.config['SMTP_SENDER'],
-#                                 ['REDACTED_EMAIL'], msg.as_string())
+#                                 ['user@example.com'], msg.as_string())
 #     except Exception:
 #         pass  # 上报失败不阻断登录
 

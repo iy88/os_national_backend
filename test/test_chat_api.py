@@ -1,8 +1,14 @@
 import json
+import os
 
 import requests
 
-token = "REDACTED_JWT"
+# token 从环境变量读取，不要把真实凭据写进仓库
+# 取值：调用登录接口，复制响应中的 token 字段
+token = os.getenv("TEST_TOKEN")
+if not token:
+    raise SystemExit("请先设置环境变量 TEST_TOKEN")
+
 base_url = "http://127.0.0.1:8080/agent/travel-route-plan"
 headers = {
     "Authorization": f"Bearer {token}",
